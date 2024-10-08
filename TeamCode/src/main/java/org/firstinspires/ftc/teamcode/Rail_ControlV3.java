@@ -7,8 +7,8 @@ import com.qualcomm.robotcore.util.Range;
 
 public class Rail_ControlV3 {
 
-    DcMotor motor;      // the motor connected to the rail
-    PID pid;
+    DcMotor motor_obj;      // the motor connected to the rail
+    PID pid_obj;
     double target_position;             // Target position for the rail (in encoder ticks: +ve or -ve)
     double max;
     double min;
@@ -24,29 +24,29 @@ public class Rail_ControlV3 {
     public Rail_ControlV3(DcMotor motor) {
 
         // Assign the motor connected to the bucket and initialize it
-        this.motor = motor;
-        this.motor.setDirection(DcMotorSimple.Direction.FORWARD);
-        this.motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        this.motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        motor_obj = motor;
+        motor_obj.setDirection(DcMotorSimple.Direction.FORWARD);
+        motor_obj.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        motor_obj.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
 
         // Create ElapsedTime object (only used during calibration)
         et = new ElapsedTime();
 
         // Create a new PID object to control the bucket
-        pid = new PID();
+        pid_obj = new PID();
         run_state = Task_State.INIT;
     }
 
     // METHOD THAT A STATE MACHINE OPMODE SHOULD CALL WHEN IT IS READY TO LAUNCH THE NEXT TASK IN ITS LIST
-    public void SetTargetPosition(double target, double min_pwr, double max_pwr) {
+    public void SetTargetPosition(double target_position, double min, double max) {
 
-        target_position = target;
-        max = max_pwr;
-        min = min_pwr;
+        this.target_position = target_position;
+        this.max = max;
+        this.min = min;
 
         run_state = Task_State.RUN;
-        pid.Reset_PID();
+        pid_obj.Reset_PID();
 
     }
 
@@ -75,11 +75,11 @@ public class Rail_ControlV3 {
 
             // 0.07, 0.000001, 0.000005 (these are the best gains for accurate position and few jitters
             //cmd = pid_obj.PID_Control(target_position, 0.03, 0.000001, 0.000005, motor_obj.getCurrentPosition() );
-            cmd = pid.PID_Control(target_position, 0.005, 0, 0, motor.getCurrentPosition() );
+            cmd = pid_obj.PID_Control(target_position, 0.005, 0, 0, motor_obj.getCurrentPosition() );
 
             // Don't let the motor run too fast. Otherwise, it will overshoot
             clipped_cmd = Range.clip(cmd, min, max);
-            motor.setPower(clipped_cmd);
+            motor_obj.setPower(clipped_cmd);
 
             if (run_state == Task_State.DONE) {
                 run_state = Task_State.READY;
@@ -89,49 +89,49 @@ public class Rail_ControlV3 {
             // the next task in its list
             else if (run_state == Task_State.RUN) {
 
-                if (target_position > motor.getCurrentPosition()) {
+                if (target_position > motor_obj.getCurrentPosition()) {
 
-                    if (motor.getCurrentPosition() > (target_position - tolerance)) {
+                    if (motor_obj.getCurrentPosition() > (target_position - tolerance)) {
                         run_state = Task_State.DONE;
                     }
                 }
-                else if (target_position < motor.getCurrentPosition()) {
+                else if (target_position < motor_obj.getCurrentPosition()) {
 
-                    if (motor.getCurrentPosition() < (target_position + tolerance)) {
+                    if (motor_obj.getCurrentPosition() < (target_position + tolerance)) {
                         run_state = Task_State.DONE;
                     }
                 }
                 else {
-                    if (run_state != Task_State.READY && motor.getCurrentPosition() > (target_position - tolerance) &&
-                            motor.getCurrentPosition() < (target_position + tolerance)) {
+                    if (run_state != Task_State.READY && motor_obj.getCurrentPosition() > (target_position - tolerance) &&
+                            motor_obj.getCurrentPosition() < (target_position + tolerance)) {
                         run_state = Task_State.DONE;
                     }
                 }
             }
         }
         else if (run_state == Task_State.CALIBRATE) {
-            motor.setPower(0);
+            motor_obj.setPower(0);
 
             if (et.milliseconds() >= 1000) {
 
                 // Reset the rail's DC motor encoder
-                motor .setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                motor_obj.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
                 // Reset the PID object (otherwise, the PID will still have leftover
                 // memory of what it previously did which may cause bad commands from carrying forward)
-                pid.Reset_PID();
+                pid_obj.Reset_PID();
                 run_state = Task_State.DONE;
-                motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+                motor_obj.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             }
         }
         else if (run_state == Task_State.OVERRIDE) {
-            motor.setPower(0);
+            motor_obj.setPower(0);
 
             if (et.milliseconds() >= 1000) {
 
                 // Reset the PID object (otherwise, the PID will still have leftover
                 // memory of what it previously did which may cause bad commands from carrying forward)
-                pid.Reset_PID();
+                pid_obj.Reset_PID();
                 run_state = Task_State.DONE;
             }
         }
