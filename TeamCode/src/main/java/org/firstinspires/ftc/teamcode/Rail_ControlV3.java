@@ -41,7 +41,7 @@ public class Rail_ControlV3 {
     // METHOD THAT A STATE MACHINE OPMODE SHOULD CALL WHEN IT IS READY TO LAUNCH THE NEXT TASK IN ITS LIST
     public void SetTargetPosition(double target_position, double min, double max) {
 
-        this.target_position = target_position;
+        this.target_position = -target_position;
         this.max = max;
         this.min = min;
 

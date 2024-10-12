@@ -361,7 +361,7 @@ public class Sprint1Teleop extends LinearOpMode {
     }
 
     public void AttachmentPresets() {
-        //Rail & Lin Actuator Presets
+        //Intake & Lin Actuator Presets
         Slide.setDirection(DcMotorSimple.Direction.FORWARD);
         Slide.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         Slide.setTargetPosition(0);
