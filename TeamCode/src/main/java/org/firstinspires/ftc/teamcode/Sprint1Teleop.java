@@ -27,7 +27,7 @@ import org.openftc.easyopencv.OpenCvCamera;
 import org.openftc.easyopencv.OpenCvCameraFactory;
 import org.openftc.easyopencv.OpenCvCameraRotation;
 
-@TeleOp(name = "Sprint1Teleop",  group = "MecanumDrive")
+@TeleOp(name = "Sprint1Teleop", group = "MecanumDrive")
 public class Sprint1Teleop extends LinearOpMode {
 
     //Motors
@@ -127,8 +127,8 @@ public class Sprint1Teleop extends LinearOpMode {
         Base = hardwareMap.get(DcMotor.class, "Base");
 
         //Servo Initalization
-        rightClaw = hardwareMap.get(Servo.class,"rightClaw");
-        leftClaw = hardwareMap.get(Servo.class,"leftClaw");
+        rightClaw = hardwareMap.get(Servo.class, "rightClaw");
+        leftClaw = hardwareMap.get(Servo.class, "leftClaw");
         clawPivot = hardwareMap.get(Servo.class, "clawPivot");
 
         //Set Drive Motor Directions
@@ -309,8 +309,8 @@ public class Sprint1Teleop extends LinearOpMode {
 
             if (!button_x_already_pressed2) {
                 if (gamepad2.x) {
-                    setSlidePosition(0,0.7);
-                    setBasePosition(0,1);
+                    setSlidePosition(0, 0.7);
+                    setBasePosition(0, 1);
                     clawClose();
                     clawPivot.setPosition(1);
                     button_x_already_pressed2 = true;
@@ -326,7 +326,7 @@ public class Sprint1Teleop extends LinearOpMode {
              *****************************************************************/
 
             if (gamepad2.dpad_right) {
-                setBasePosition(Base.getCurrentPosition() + 100,1);
+                setBasePosition(Base.getCurrentPosition() + 100, 1);
             }
 
             /*****************************************************************
@@ -334,7 +334,7 @@ public class Sprint1Teleop extends LinearOpMode {
              *****************************************************************/
 
             if (gamepad2.dpad_left) {
-                setBasePosition(Base.getCurrentPosition() - 100,1);
+                setBasePosition(Base.getCurrentPosition() - 100, 1);
             }
 
             /*****************************************************************
@@ -361,7 +361,7 @@ public class Sprint1Teleop extends LinearOpMode {
     }
 
     public void AttachmentPresets() {
-        //Rail & Lin Actuator Presets
+        //Intake & Lin Actuator Presets
         Slide.setDirection(DcMotorSimple.Direction.FORWARD);
         Slide.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         Slide.setTargetPosition(0);
@@ -394,7 +394,7 @@ public class Sprint1Teleop extends LinearOpMode {
 
     }
 
-    public void setBasePosition (int position, double power){
+    public void setBasePosition(int position, double power) {
 
         Base.setTargetPosition(position);
         Base.setMode(DcMotor.RunMode.RUN_TO_POSITION);

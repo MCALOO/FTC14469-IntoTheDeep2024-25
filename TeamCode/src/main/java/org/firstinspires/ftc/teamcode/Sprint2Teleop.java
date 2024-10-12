@@ -27,42 +27,21 @@ import org.openftc.easyopencv.OpenCvCamera;
 import org.openftc.easyopencv.OpenCvCameraFactory;
 import org.openftc.easyopencv.OpenCvCameraRotation;
 
-@TeleOp(name = "Test",  group = "MecanumDrive")
-public class Test extends LinearOpMode {
+@TeleOp(name = "Sprint2Teleop",  group = "MecanumDrive")
+public class Sprint2Teleop extends LinearOpMode {
 
     //Motors
     static DcMotor BackLeft;
     static DcMotor BackRight;
     static DcMotor FrontLeft;
     static DcMotor FrontRight;
-    static DcMotor Slide;
-    static DcMotor Base;
+    static DcMotor Intake_Rail;
+    static DcMotor Outtake_Rail;
 
     //Servos
-    static Servo rightClaw; // Servo Mode
-    static Servo leftClaw; // Servo Mode
-    static Servo clawPivot; // Servo Mode
-
-    //Vars for White color detection
-    boolean WhiteJerry;
-    boolean WhiteBackLeft;
-    boolean WhiteBackRight;
-    boolean UnknownJerry;
-    boolean UnknownBackLeft;
-    boolean UnknownBackRight;
-
-    //Vars for Touch Sensor
-    boolean leftTouchIsPressed = false;
-    boolean rightTouchIsPressed = false;
-    double leftTouchValue;
-    double rightTouchValue;
-
-    //IMU
-    BNO055IMU IMU;
-    //Variables For IMU Gyro
-    double globalangle;
-    BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
-    Orientation orientation;
+    static Servo OuttakeBucket; // Servo Mode
+    static Servo IntakeBucket; // Servo Mode
+    static CRServo IntakeWheels; // Continuous Rotation Mode
 
     //Button Pressing Variables
     boolean button_a_already_pressed = false;
@@ -105,10 +84,6 @@ public class Test extends LinearOpMode {
     //direction control
     double l;
 
-    //toggle vars
-    boolean clawSetting;
-
-
     //separate boolean vars
     boolean stopControls = false; //stop all movement controls
     boolean lowMovement = false; //set movement to 20% right before reaching the backdrop
@@ -123,13 +98,13 @@ public class Test extends LinearOpMode {
         BackRight = hardwareMap.get(DcMotor.class, "BackRight");
         FrontLeft = hardwareMap.get(DcMotor.class, "FrontLeft");
         FrontRight = hardwareMap.get(DcMotor.class, "FrontRight");
-        Slide = hardwareMap.get(DcMotor.class, "Slide");
-        Base = hardwareMap.get(DcMotor.class, "Base");
+        Intake_Rail = hardwareMap.get(DcMotor.class, "IntakeRail");
+        Outtake_Rail = hardwareMap.get(DcMotor.class, "OuttakeRail");
 
         //Servo Initalization
-        rightClaw = hardwareMap.get(Servo.class,"rightClaw");
-        leftClaw = hardwareMap.get(Servo.class,"leftClaw");
-        clawPivot = hardwareMap.get(Servo.class, "clawPivot");
+        IntakeBucket = hardwareMap.get(Servo.class,"IntakeBucket");
+        OuttakeBucket = hardwareMap.get(Servo.class,"OuttakeBucket");
+        IntakeWheels = hardwareMap.get(CRServo.class, "IntakeWheels");
 
         //Set Drive Motor Directions
         FrontRight.setDirection(DcMotorSimple.Direction.FORWARD);
@@ -139,15 +114,6 @@ public class Test extends LinearOpMode {
 
         //Set Servo and Motor Presets
         AttachmentPresets();
-
-
-        //imu initialization
-        IMU = hardwareMap.get(BNO055IMU.class, "imu");
-
-        //Configrue IMU for GyroTurning
-        parameters.angleUnit = BNO055IMU.AngleUnit.DEGREES;
-        IMU.initialize(parameters);
-        globalangle = 0;
 
         //when you let go of movement control, robot will stop, not drift
         BackLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -194,7 +160,6 @@ public class Test extends LinearOpMode {
              * Left/Right Analog Sticks (G1) - Movement
              *****************************************************************/
 
-            if (!stopControls) {
                 double y = -gamepad1.left_stick_y * movement;
                 double x = gamepad1.left_stick_x * movement;
                 double rx = gamepad1.right_stick_x * movement;
@@ -211,21 +176,13 @@ public class Test extends LinearOpMode {
                 FrontRight.setPower(FRPower);
                 BackRight.setPower(BRPower);
 
-            }
-
             /*****************************************************************
              * Button Guide (G2) :
              *****************************************************************/
 
             if (!button_guide_already_pressed2) {
                 if (gamepad2.guide) {
-                    if (!clawSetting) {
-                        clawOpen();
-                        clawSetting = true;
-                    } else {
-                        clawClose();
-                        clawSetting = false;
-                    }
+                    wheelOff();
                     button_guide_already_pressed2 = true;
                 }
             } else {
@@ -238,10 +195,10 @@ public class Test extends LinearOpMode {
              * Button Back (G2) :
              *****************************************************************/
 
+
             if (!button_back_already_pressed2) {
                 if (gamepad2.back) {
-                    setSlidePosition(0,1);
-                    setBasePosition(3200,1);
+                    wheelReverse();
                     button_back_already_pressed2 = true;
                 }
             } else {
@@ -253,11 +210,10 @@ public class Test extends LinearOpMode {
             /*****************************************************************
              * Button Start (G2) :
              *****************************************************************/
+
             if (!button_start_already_pressed2) {
                 if (gamepad2.start) {
-                    setSlidePosition(1500,1);
-                    setBasePosition(3500,1);
-                    clawOpen();
+                    wheelOn();
                     button_start_already_pressed2 = true;
                 }
             } else {
@@ -267,14 +223,14 @@ public class Test extends LinearOpMode {
             }
 
             /*****************************************************************
-             * Button Y (G2) : Set Slide for High Bucket
+             * Button Y (G2) :
              **************************************************************z***/
 
             if (!button_y_already_pressed2) {
                 if (gamepad2.y) {
-                    setSlidePosition(4100,1);
-                    setBasePosition(700,1);
-                    clawPivot.setPosition(0.3);
+
+                    setOuttake();
+
                     button_y_already_pressed2 = true;
                 }
             } else {
@@ -289,9 +245,10 @@ public class Test extends LinearOpMode {
 
             if (!button_b_already_pressed2) {
                 if (gamepad2.b) {
-                    setSlidePosition(2400,1);
-                    setBasePosition(0,1);
-                    clawPivot.setPosition(0.35);
+
+                    ET.reset();
+                    setFolded();
+
                     button_b_already_pressed2 = true;
                 }
             } else {
@@ -306,8 +263,13 @@ public class Test extends LinearOpMode {
 
             if (!button_a_already_pressed2) {
                 if (gamepad2.a) {
-                    setBasePosition(3200,1);
-                    clawPivot.setPosition(0.5);
+
+                    setIntakePosition(1000,0.7);
+                    if (Intake_Rail.getCurrentPosition() > 900) {
+                        setIntake();
+                        wheelOn();
+                    }
+
                     button_a_already_pressed2 = true;
                 }
             } else {
@@ -317,50 +279,24 @@ public class Test extends LinearOpMode {
             }
 
             /*****************************************************************
-             * Button X (G2) : Reset All Attachments (Slides, Base, Claw)
+             * Button X (G2) :
              *****************************************************************/
 
             if (!button_x_already_pressed2) {
                 if (gamepad2.x) {
-                    setSlidePosition(0,0.7);
-                    setBasePosition(0,1);
-                    clawClose();
-                    clawPivot.setPosition(1);
+
+                    ET.reset();
+                    wheelOff();
+                    setEntry();
+                    setTransfer();
+                    setIntakePosition(0,0.7);
+                    setOuttakePosition(0,0.7);
+
                     button_x_already_pressed2 = true;
                 }
             } else {
                 if (!gamepad2.x) {
                     button_x_already_pressed2 = false;
-                }
-            }
-
-            /*****************************************************************
-             * Dpad Up (G2) :
-             *****************************************************************/
-
-            if (!button_dpad_up_already_pressed2) {
-                if (gamepad2.dpad_up) {
-
-                    button_dpad_up_already_pressed2 = true;
-                }
-            } else {
-                if (!gamepad2.dpad_up) {
-                    button_dpad_up_already_pressed2 = false;
-                }
-            }
-
-            /*****************************************************************
-             * Dpad Down (G2) :
-             *****************************************************************/
-
-            if (!button_dpad_down_already_pressed2) {
-                if (gamepad2.dpad_down) {
-
-                    button_dpad_down_already_pressed2 = true;
-                }
-            } else {
-                if (!gamepad2.dpad_down) {
-                    button_dpad_down_already_pressed2 = false;
                 }
             }
 
@@ -395,11 +331,46 @@ public class Test extends LinearOpMode {
             }
 
             /*****************************************************************
+             * Dpad Up (G2) :
+             *****************************************************************/
+
+            if (!button_dpad_up_already_pressed2) {
+                if (gamepad2.dpad_up) {
+
+                    button_dpad_up_already_pressed2 = true;
+                }
+            } else {
+                if (!gamepad2.dpad_up) {
+                    button_dpad_up_already_pressed2 = false;
+                }
+            }
+
+            /*****************************************************************
+             * Dpad Down (G2) :
+             *****************************************************************/
+
+            if (!button_dpad_down_already_pressed2) {
+                if (gamepad2.dpad_down) {
+
+                    button_dpad_down_already_pressed2 = true;
+                }
+            } else {
+                if (!gamepad2.dpad_down) {
+                    button_dpad_down_already_pressed2 = false;
+                }
+            }
+
+            /*****************************************************************
              * Right Bumper (G2) :
              *****************************************************************/
 
             if (!button_bumper_right_already_pressed2) {
                 if (gamepad2.right_bumper) {
+
+                    setEntry();
+                    setTransfer();
+                    wheelOff();
+                    setOuttakePosition(900,0.8);
 
                     button_bumper_right_already_pressed2 = true;
                 }
@@ -416,6 +387,11 @@ public class Test extends LinearOpMode {
             if (!button_bumper_left_already_pressed2) {
                 if (gamepad2.left_bumper) {
 
+                    setEntry();
+                    setTransfer();
+                    wheelOff();
+                    setOuttakePosition(400,0.8);
+
                     button_bumper_left_already_pressed2 = true;
                 }
             } else {
@@ -424,61 +400,83 @@ public class Test extends LinearOpMode {
                 }
             }
 
-            telemetry.addData("Base Encoder:", Base.getCurrentPosition());
-            telemetry.addData("Slide Encoder:", Base.getCurrentPosition());
             telemetry.update();
 
         }
     }
 
     public void AttachmentPresets() {
-        //Intake & Lin Actuator Presets
-        Slide.setDirection(DcMotorSimple.Direction.FORWARD);
-        Slide.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        Slide.setTargetPosition(0);
-        Slide.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        Base.setDirection(DcMotorSimple.Direction.REVERSE);
-        Base.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        Base.setTargetPosition(0);
-        Base.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+        //Intake Presets
+        Outtake_Rail.setDirection(DcMotorSimple.Direction.REVERSE);
+        Outtake_Rail.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        Outtake_Rail.setTargetPosition(0);
+        Outtake_Rail.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        Outtake_Rail.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
+        Intake_Rail.setDirection(DcMotorSimple.Direction.REVERSE);
+        Intake_Rail.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        Intake_Rail.setTargetPosition(0);
+        Intake_Rail.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        Intake_Rail.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         //Servo Presets
-        rightClaw.setDirection(Servo.Direction.FORWARD);
-        rightClaw.setPosition(0.5);
-        leftClaw.setDirection(Servo.Direction.REVERSE);
-        leftClaw.setPosition(0.5);
-        leftClaw.setDirection(Servo.Direction.FORWARD);
-        clawPivot.setPosition(1);
-    }
+        IntakeBucket.setDirection(Servo.Direction.FORWARD);
+        setFolded();
 
-    public void clawOpen() {
+        OuttakeBucket.setDirection(Servo.Direction.REVERSE);
+        setTransfer();
 
-        rightClaw.setPosition(-1);
-        leftClaw.setPosition(1);
+        IntakeWheels.setDirection(CRServo.Direction.FORWARD);
 
     }
 
-    public void clawClose() {
+    public void setIntakePosition (int position, double power){
 
-        rightClaw.setPosition(0.55);
-        leftClaw.setPosition(0.45);
-
-    }
-
-    public void setBasePosition (int position, double power){
-
-        Base.setTargetPosition(position);
-        Base.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        Base.setPower(power);
+        Intake_Rail.setTargetPosition(position);
+        Intake_Rail.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        Intake_Rail.setPower(power);
 
     }
 
-    public void setSlidePosition(int position, double power) {
+    public void setOuttakePosition(int position, double power) {
 
-        Slide.setTargetPosition(position);
-        Slide.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        Slide.setPower(power);
+        Outtake_Rail.setTargetPosition(position);
+        Outtake_Rail.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        Outtake_Rail.setPower(power);
 
+    }
+
+    public void setIntake() {
+        IntakeBucket.setPosition(0.35);
+    }
+
+    public void setEntry() {
+        IntakeBucket.setPosition(0.6);
+    }
+
+    public void setFolded() {
+        IntakeBucket.setPosition(0.87);
+    }
+
+    public void setTransfer() {
+        OuttakeBucket.setPosition(0);
+    }
+
+    public void setOuttake() {
+        OuttakeBucket.setPosition(0.8);
+    }
+
+    public void wheelOn() {
+        IntakeWheels.setPower(1);
+    }
+
+    public  void wheelOff() {
+        IntakeWheels.setPower(0);
+    }
+
+    public void wheelReverse() {
+        IntakeWheels.setPower(-1);
     }
 
 }
