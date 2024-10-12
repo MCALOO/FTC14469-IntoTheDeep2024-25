@@ -406,6 +406,7 @@ public class Sprint2Teleop extends LinearOpMode {
     }
 
     public void AttachmentPresets() {
+
         //Rail Presets
         Outtake_Rail.setDirection(DcMotorSimple.Direction.REVERSE);
         Outtake_Rail.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
