@@ -85,7 +85,6 @@ public class Sprint2Teleop extends LinearOpMode {
     double l;
 
     //separate boolean vars
-    boolean stopControls = false; //stop all movement controls
     boolean lowMovement = false; //set movement to 20% right before reaching the backdrop
 
     //Elapsed Timer
