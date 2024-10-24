@@ -4,14 +4,19 @@ import android.graphics.Color;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.NormalizedColorSensor;
 import com.qualcomm.robotcore.hardware.NormalizedRGBA;
+import com.qualcomm.robotcore.hardware.Servo;
 
 @TeleOp(name = "IntakeTest",  group = "Intake")
 public class IntakeTest extends LinearOpMode {
 
     static NormalizedColorSensor Intake_Back;
     static NormalizedColorSensor Intake_Side;
+
+    static Servo IntakeBucket; // Servo Mode
+    static CRServo IntakeWheels; // Continuous Rotation Mode
 
     boolean UnknownIntakeBack;
     boolean BlueIntakeBack;
@@ -45,6 +50,8 @@ public class IntakeTest extends LinearOpMode {
         Intake_Back = hardwareMap.get(NormalizedColorSensor.class, "IntakeColorBack");
         Intake_Side = hardwareMap.get(NormalizedColorSensor.class, "IntakeColorSide");
 
+        IntakeBucket = hardwareMap.get(Servo.class,"IntakeBucket");
+        IntakeWheels = hardwareMap.get(CRServo.class, "IntakeWheels");
 
         waitForStart();
 
@@ -67,6 +74,15 @@ public class IntakeTest extends LinearOpMode {
             telemetry.update();
 
         }
+
+    }
+
+    public void AttachmentPresets() {
+
+        IntakeBucket.setDirection(Servo.Direction.FORWARD);
+        setFolded();
+
+        IntakeWheels.setDirection(CRServo.Direction.FORWARD);
 
     }
 
@@ -158,6 +174,30 @@ public class IntakeTest extends LinearOpMode {
             YellowIntakeSide = false;
             return unkwown;
         }
+    }
+
+    public void setIntake() {
+        IntakeBucket.setPosition(0.35);
+    }
+
+    public void setEntry() {
+        IntakeBucket.setPosition(0.6);
+    }
+
+    public void setFolded() {
+        IntakeBucket.setPosition(0.87);
+    }
+
+    public void wheelOn() {
+        IntakeWheels.setPower(1);
+    }
+
+    public  void wheelOff() {
+        IntakeWheels.setPower(0);
+    }
+
+    public void wheelReverse() {
+        IntakeWheels.setPower(-1);
     }
 
 }
