@@ -42,7 +42,7 @@ public class Base_Control {
     // METHOD THAT A STATE MACHINE OPMODE SHOULD CALL WHEN IT IS READY TO LAUNCH THE NEXT TASK IN ITS LIST
     public void SetTargetPosition(double target, double min_pwr, double max_pwr) {
 
-        target_position = -target;
+        target_position = target;
         max = max_pwr;
         min = min_pwr;
 

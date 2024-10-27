@@ -49,7 +49,7 @@ public class Base_SwivelTest extends LinearOpMode {
     public void runOpMode() {
 
         Swivel = hardwareMap.get(DcMotor.class,"Swivel");
-        Swivel.setDirection(DcMotorSimple.Direction.REVERSE);
+        Swivel.setDirection(DcMotorSimple.Direction.FORWARD);
         Swivel.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         Swivel.setTargetPosition(0);
         Swivel.setMode(DcMotor.RunMode.RUN_TO_POSITION);

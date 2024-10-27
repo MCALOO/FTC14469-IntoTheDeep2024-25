@@ -93,6 +93,9 @@ public class Sprint3Teleop extends LinearOpMode {
     //separate boolean vars
     boolean lowMovement = false; //set movement to 20% right before reaching the backdrop
 
+    //sequence managers
+    int intake = 1000;
+
     //Elapsed Timer
     ElapsedTime ET = new ElapsedTime();
 
@@ -193,15 +196,74 @@ public class Sprint3Teleop extends LinearOpMode {
             FrontRight.setPower(FRPower);
             BackRight.setPower(BRPower);
 
+            /******************************************************************
+             * Automatic Sequence Managers
+             *****************************************************************/
+
+            //Intake automatic sequencing
+            switch (intake) {
+
+                case 0:
+                    setEntry();
+                    ET.reset();
+                    RailControl_Intake.SetTargetPosition(1000,-0.7,0.7);
+                    intake++;
+                    break;
+
+                case 1:
+                    if (Intake_Rail.getCurrentPosition() < -850) {
+                        wheelOn();
+                        setIntake();
+                        Swivel_Control.SetTargetPosition(250,-0.2,0.2);
+                        intake++;
+                    }
+                    break;
+
+                case 2:
+                    if (UnknownIntakeSide || BlueIntakeSide || RedIntakeSide || YellowIntakeSide) {
+                        setTransfer();
+                        setEntry();
+                        RailControl_Intake.SetTargetPosition(0,-0.7,0.7);
+                        ET.reset();
+                        intake++;
+                    }
+                    break;
+
+                case 3:
+                    if (ET.milliseconds() > 500) {
+                        if (Intake_Rail.getCurrentPosition() > -150) {
+                            setFolded();
+                            wheelOff();
+                            ET.reset();
+                            intake++;
+                        }
+                    }
+                    break;
+
+                case 4:
+                    if (ET.milliseconds() > 500) {
+                        wheelReverse();
+                        intake++;
+                    }
+                    break;
+
+                case 5:
+                    if (DO.getDistance(DistanceUnit.CM) < 10) {
+                        wheelOff();
+                        intake++;
+                    }
+
+                default:
+                    break;
+            }
+
             /*****************************************************************
              * Button Guide (G2) :
              *****************************************************************/
 
             if (!button_guide_already_pressed2) {
                 if (gamepad2.guide) {
-
-
-
+                    wheelOff();
                     button_guide_already_pressed2 = true;
                 }
             } else {
@@ -217,9 +279,7 @@ public class Sprint3Teleop extends LinearOpMode {
 
             if (!button_back_already_pressed2) {
                 if (gamepad2.back) {
-
-
-
+                    wheelReverse();
                     button_back_already_pressed2 = true;
                 }
             } else {
@@ -234,9 +294,7 @@ public class Sprint3Teleop extends LinearOpMode {
 
             if (!button_start_already_pressed2) {
                 if (gamepad2.start) {
-
-
-
+                    wheelOn();
                     button_start_already_pressed2 = true;
                 }
             } else {
@@ -252,7 +310,7 @@ public class Sprint3Teleop extends LinearOpMode {
             if (!button_y_already_pressed2) {
                 if (gamepad2.y) {
 
-
+                    intake = 0;
 
                     button_y_already_pressed2 = true;
                 }
@@ -269,7 +327,7 @@ public class Sprint3Teleop extends LinearOpMode {
             if (!button_b_already_pressed2) {
                 if (gamepad2.b) {
 
-
+                    RailControl_Outtake.SetTargetPosition(0,-0.7,0.7);
 
                     button_b_already_pressed2 = true;
                 }
@@ -286,7 +344,7 @@ public class Sprint3Teleop extends LinearOpMode {
             if (!button_a_already_pressed2) {
                 if (gamepad2.a) {
 
-                    Swivel_Control.SetTargetPosition(1300,-0.2,0.2);
+                    setIntake();
 
                     button_a_already_pressed2 = true;
                 }
@@ -303,7 +361,7 @@ public class Sprint3Teleop extends LinearOpMode {
             if (!button_x_already_pressed2) {
                 if (gamepad2.x) {
 
-                    Swivel_Control.SetTargetPosition(0,-0.2,0.2);
+                    setFolded();
 
                     button_x_already_pressed2 = true;
                 }
@@ -320,7 +378,7 @@ public class Sprint3Teleop extends LinearOpMode {
             if (!button_dpad_right_already_pressed2) {
                 if (gamepad2.dpad_right) {
 
-
+                    setTransfer();
 
                     button_dpad_right_already_pressed2 = true;
                 }
@@ -337,7 +395,7 @@ public class Sprint3Teleop extends LinearOpMode {
             if (!button_dpad_left_already_pressed2) {
                 if (gamepad2.dpad_left) {
 
-
+                    setGrab();
 
                     button_dpad_left_already_pressed2 = true;
                 }
@@ -354,7 +412,7 @@ public class Sprint3Teleop extends LinearOpMode {
             if (!button_dpad_up_already_pressed2) {
                 if (gamepad2.dpad_up) {
 
-
+                    setOuttake();
 
                     button_dpad_up_already_pressed2 = true;
                 }
@@ -420,7 +478,10 @@ public class Sprint3Teleop extends LinearOpMode {
             Swivel_Control.BaseTask();
             Color_Distance_Detector();
             telemetry.addLine();
-            telemetry.addData("Distance Sensor Value", DI.getDistance(DistanceUnit.CM));
+            telemetry.addData("Intake Distance Sensor Value:", DI.getDistance(DistanceUnit.CM));
+            telemetry.addData("Outtake Distance Sensor Value:", DO.getDistance(DistanceUnit.CM));
+            telemetry.addData("Intake Rail Encoder Value:", Intake_Rail.getCurrentPosition());
+            telemetry.addData("Swivel Ecoder Value:", Swivel.getCurrentPosition());
             telemetry.update();
 
         }
@@ -428,14 +489,14 @@ public class Sprint3Teleop extends LinearOpMode {
 
     public void AttachmentPresets() {
 
-        //Intake Presets
+        //Attachment Motor Presets
         Outtake_Rail.setDirection(DcMotorSimple.Direction.REVERSE);
         Outtake_Rail.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         Outtake_Rail.setTargetPosition(0);
         Outtake_Rail.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         Outtake_Rail.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
-        Intake_Rail.setDirection(DcMotorSimple.Direction.REVERSE);
+        Intake_Rail.setDirection(DcMotorSimple.Direction.FORWARD);
         Intake_Rail.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         Intake_Rail.setTargetPosition(0);
         Intake_Rail.setMode(DcMotor.RunMode.RUN_TO_POSITION);
@@ -454,7 +515,7 @@ public class Sprint3Teleop extends LinearOpMode {
 
         OuttakeBucket.setDirection(Servo.Direction.FORWARD);
         OuttakeWrist.setDirection(Servo.Direction.REVERSE);
-        setTransfer();
+        setGrab();
     }
 
     private void Color_Distance_Detector() {
@@ -538,6 +599,10 @@ public class Sprint3Teleop extends LinearOpMode {
         } else {
 
             telemetry.addData("Sample Position:","None Found");
+            UnknownIntakeSide = false;
+            BlueIntakeSide = false;
+            RedIntakeSide = false;
+            YellowIntakeSide = false;
 
         }
 
@@ -566,20 +631,20 @@ public class Sprint3Teleop extends LinearOpMode {
     }
 
     public void setIntake() {
-        IntakeBucket.setPosition(0.35);
+        IntakeBucket.setPosition(0.28);
     }
 
     public void setEntry() {
-        IntakeBucket.setPosition(0.6);
+        IntakeBucket.setPosition(0.5);
     }
 
     public void setFolded() {
-        IntakeBucket.setPosition(0.87);
+        IntakeBucket.setPosition(0.8);
     }
 
     public void setTransfer() {
         OuttakeBucket.setPosition(0.5);
-        OuttakeWrist.setPosition(0.5);
+        OuttakeWrist.setPosition(0.2);
     }
 
     public void setOuttake() {
@@ -589,7 +654,7 @@ public class Sprint3Teleop extends LinearOpMode {
 
     public void setGrab() {
         OuttakeBucket.setPosition(0.5);
-        OuttakeWrist.setPosition(0.95);
+        OuttakeWrist.setPosition(0.83);
 
     }
 
@@ -602,7 +667,7 @@ public class Sprint3Teleop extends LinearOpMode {
     }
 
     public void wheelReverse() {
-        IntakeWheels.setPower(-1);
+        IntakeWheels.setPower(-0.8);
     }
 
 }
