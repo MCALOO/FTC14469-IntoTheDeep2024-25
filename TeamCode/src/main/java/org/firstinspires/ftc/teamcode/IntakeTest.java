@@ -14,7 +14,7 @@ import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
-@TeleOp(name = "IntakeTest",  group = "Intake")
+//@TeleOp(name = "IntakeTest",  group = "Intake")
 public class IntakeTest extends LinearOpMode {
 
 //    static NormalizedColorSensor Intake_Back;

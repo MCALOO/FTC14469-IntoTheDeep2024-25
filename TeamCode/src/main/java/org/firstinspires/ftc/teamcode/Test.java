@@ -27,7 +27,7 @@ import org.openftc.easyopencv.OpenCvCamera;
 import org.openftc.easyopencv.OpenCvCameraFactory;
 import org.openftc.easyopencv.OpenCvCameraRotation;
 
-@TeleOp(name = "Test",  group = "MecanumDrive")
+//@TeleOp(name = "Test",  group = "MecanumDrive")
 public class Test extends LinearOpMode {
 
     //Motors

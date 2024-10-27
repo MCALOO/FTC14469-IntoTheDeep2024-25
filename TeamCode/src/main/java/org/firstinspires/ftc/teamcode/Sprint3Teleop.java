@@ -114,6 +114,11 @@ public class Sprint3Teleop extends LinearOpMode {
         OuttakeWrist = hardwareMap.get(Servo.class,"OuttakeWrist");
         Claw = hardwareMap.get(CRServo.class,"Claw");
 
+        //Sensor Initalization
+        CI = hardwareMap.get(NormalizedColorSensor.class,"CI");
+        DI = hardwareMap.get(DistanceSensor.class,"DI");
+        DO = hardwareMap.get(DistanceSensor.class,"DO");
+
         //Set Drive Motor Directions
         FrontRight.setDirection(DcMotorSimple.Direction.FORWARD);
         FrontLeft.setDirection(DcMotorSimple.Direction.REVERSE);
@@ -281,7 +286,7 @@ public class Sprint3Teleop extends LinearOpMode {
             if (!button_a_already_pressed2) {
                 if (gamepad2.a) {
 
-                    Swivel_Control.SetTargetPosition(200,-0.5,0.5);
+                    Swivel_Control.SetTargetPosition(1300,-0.2,0.2);
 
                     button_a_already_pressed2 = true;
                 }
@@ -298,7 +303,7 @@ public class Sprint3Teleop extends LinearOpMode {
             if (!button_x_already_pressed2) {
                 if (gamepad2.x) {
 
-                    Swivel_Control.SetTargetPosition(0,-0.5,0.5);
+                    Swivel_Control.SetTargetPosition(0,-0.2,0.2);
 
                     button_x_already_pressed2 = true;
                 }
@@ -410,9 +415,9 @@ public class Sprint3Teleop extends LinearOpMode {
                 }
             }
 
-
             RailControl_Intake.RailTask();
             RailControl_Outtake.RailTask();
+            Swivel_Control.BaseTask();
             Color_Distance_Detector();
             telemetry.addLine();
             telemetry.addData("Distance Sensor Value", DI.getDistance(DistanceUnit.CM));
@@ -436,7 +441,7 @@ public class Sprint3Teleop extends LinearOpMode {
         Intake_Rail.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         Intake_Rail.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
-        Swivel.setDirection(DcMotorSimple.Direction.FORWARD);
+        Swivel.setDirection(DcMotorSimple.Direction.REVERSE);
         Swivel.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         Swivel.setTargetPosition(0);
         Swivel.setMode(DcMotor.RunMode.RUN_TO_POSITION);
@@ -445,12 +450,11 @@ public class Sprint3Teleop extends LinearOpMode {
         //Servo Presets
         IntakeWheels.setDirection(CRServo.Direction.FORWARD);
         IntakeBucket.setDirection(Servo.Direction.FORWARD);
-//        setFolded();
+        setFolded();
 
-        OuttakeBucket.setDirection(Servo.Direction.REVERSE);
-        OuttakeWrist.setDirection(Servo.Direction.FORWARD);
+        OuttakeBucket.setDirection(Servo.Direction.FORWARD);
+        OuttakeWrist.setDirection(Servo.Direction.REVERSE);
         setTransfer();
-
     }
 
     private void Color_Distance_Detector() {
@@ -574,20 +578,19 @@ public class Sprint3Teleop extends LinearOpMode {
     }
 
     public void setTransfer() {
-        OuttakeBucket.setPosition(0);
-        OuttakeWrist.setPosition(-0.2);
+        OuttakeBucket.setPosition(0.5);
+        OuttakeWrist.setPosition(0.5);
     }
 
-    public void setElbowOuttake() {
-        OuttakeBucket.setPosition(-0.4);
+    public void setOuttake() {
+        OuttakeBucket.setPosition(0.4);
+        OuttakeWrist.setPosition(0);
     }
 
-    public void setWrist() {
-        OuttakeWrist.setPosition(1);
-    }
+    public void setGrab() {
+        OuttakeBucket.setPosition(0.5);
+        OuttakeWrist.setPosition(0.95);
 
-    public void setElbowFolded() {
-        OuttakeBucket.setPosition(-0.2);
     }
 
     public void wheelOn() {

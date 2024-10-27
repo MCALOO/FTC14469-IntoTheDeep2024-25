@@ -5,15 +5,13 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
-//@TeleOp(name = "RailTest",  group = "Rail")
-public class RailTest extends LinearOpMode {
+@TeleOp(name = "BaseTest",  group = "Swivel")
+public class Base_SwivelTest extends LinearOpMode {
 
     //Motors
-    static DcMotor Intake;
-    static DcMotor Outtake;
+    static DcMotor Swivel;
 
-    Rail_ControlV3 RailControl_Intake;
-    Rail_ControlV3 RailControl_Outtake;
+    Base_Control Swivel_Control;
 
     //Button Pressing Variables
     boolean button_a_already_pressed = false;
@@ -50,20 +48,13 @@ public class RailTest extends LinearOpMode {
 
     public void runOpMode() {
 
-        Intake = hardwareMap.get(DcMotor.class, "Intake");
-        Intake.setDirection(DcMotorSimple.Direction.REVERSE);
-        Intake.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        Intake.setTargetPosition(0);
-        Intake.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        Swivel = hardwareMap.get(DcMotor.class,"Swivel");
+        Swivel.setDirection(DcMotorSimple.Direction.REVERSE);
+        Swivel.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        Swivel.setTargetPosition(0);
+        Swivel.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 
-        Outtake = hardwareMap.get(DcMotor.class, "Outtake");
-        Outtake.setDirection(DcMotorSimple.Direction.REVERSE);
-        Outtake.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        Outtake.setTargetPosition(0);
-        Outtake.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-
-        RailControl_Intake = new Rail_ControlV3(Intake);
-        RailControl_Outtake = new Rail_ControlV3(Outtake);
+        Swivel_Control = new Base_Control(Swivel);
 
         waitForStart();
 
@@ -71,7 +62,7 @@ public class RailTest extends LinearOpMode {
 
             if (!button_a_already_pressed2) {
                 if (gamepad2.a) {
-                    RailControl_Intake.SetTargetPosition(1000,-0.80,0.80);
+                    Swivel_Control.SetTargetPosition(100,-0.3,0.3);
                     button_a_already_pressed2 = true;
                 }
             } else {
@@ -82,7 +73,7 @@ public class RailTest extends LinearOpMode {
 
             if (!button_b_already_pressed2) {
                 if (gamepad2.b) {
-                    RailControl_Intake.SetTargetPosition(0,-0.80,0.80);
+                    Swivel_Control.SetTargetPosition(0,-0.2,0.2);
                     button_b_already_pressed2 = true;
                 }
             } else {
@@ -93,7 +84,7 @@ public class RailTest extends LinearOpMode {
 
             if (!button_y_already_pressed2) {
                 if (gamepad2.y) {
-                    RailControl_Outtake.SetTargetPosition(900,-0.8,0.8);
+                    Swivel_Control.SetTargetPosition(200,-0.2,0.2);
                     button_y_already_pressed2 = true;
                 }
             } else {
@@ -104,7 +95,7 @@ public class RailTest extends LinearOpMode {
 
             if (!button_x_already_pressed2) {
                 if (gamepad2.x) {
-                    RailControl_Outtake.SetTargetPosition(0,-0.8,0.8);
+                    Swivel_Control.SetTargetPosition(0,-0.2,0.2);
                     button_x_already_pressed2 = true;
                 }
             } else {
@@ -113,8 +104,7 @@ public class RailTest extends LinearOpMode {
                 }
             }
 
-            RailControl_Intake.RailTask();
-            RailControl_Outtake.RailTask();
+            Swivel_Control.BaseTask();
 
         }
 
