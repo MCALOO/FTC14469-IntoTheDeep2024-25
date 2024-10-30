@@ -29,7 +29,6 @@ public class Sprint3Teleop extends LinearOpMode {
 
     Rail_ControlV3 RailControl_Intake;
     Rail_ControlV3 RailControl_Outtake;
-    Base_Control Swivel_Control;
 
     //Servos
     static Servo OuttakeBucket; // Servo Mode
@@ -92,9 +91,14 @@ public class Sprint3Teleop extends LinearOpMode {
 
     //separate boolean vars
     boolean lowMovement = false; //set movement to 20% right before reaching the backdrop
+    boolean blueTeam = false;
+    boolean redTeam = false;
 
     //sequence managers
-    int intake = 1000;
+    int intakeSequence = 1000;
+    int outtakeBucketSequence = 1000;
+    int outtakeTargetPosition;
+    int resetAttachments = 1000;
 
     //Elapsed Timer
     ElapsedTime ET = new ElapsedTime();
@@ -133,7 +137,6 @@ public class Sprint3Teleop extends LinearOpMode {
 
         RailControl_Intake = new Rail_ControlV3(Intake_Rail);
         RailControl_Outtake = new Rail_ControlV3(Outtake_Rail);
-        Swivel_Control = new Base_Control(Swivel);
 
         //when you let go of movement control, robot will stop, not drift
         BackLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -201,41 +204,67 @@ public class Sprint3Teleop extends LinearOpMode {
              *****************************************************************/
 
             //Intake automatic sequencing
-            switch (intake) {
+            switch (intakeSequence) {
 
                 case 0:
-                    setEntry();
+                    setIntakeEntry();
                     ET.reset();
                     RailControl_Intake.SetTargetPosition(1000,-0.7,0.7);
-                    intake++;
+                    intakeSequence++;
                     break;
 
                 case 1:
                     if (Intake_Rail.getCurrentPosition() < -850) {
                         wheelOn();
                         setIntake();
-                        Swivel_Control.SetTargetPosition(250,-0.2,0.2);
-                        intake++;
+                        setSwivelPosition(200);
+                        intakeSequence++;
                     }
                     break;
 
                 case 2:
-                    if (UnknownIntakeSide || BlueIntakeSide || RedIntakeSide || YellowIntakeSide) {
-                        setTransfer();
-                        setEntry();
-                        RailControl_Intake.SetTargetPosition(0,-0.7,0.7);
-                        ET.reset();
-                        intake++;
+                    if (redTeam) {
+                        if ((RedIntakeSide || YellowIntakeSide)) {
+                            setOuttakeTransfer();
+                            setIntakeEntry();
+                            RailControl_Intake.SetTargetPosition(0, -0.7, 0.7);
+                            ET.reset();
+                            intakeSequence++;
+                        } else if (BlueIntakeSide) {
+                            wheelReverse();
+                        } else {
+                            wheelOn();
+                        }
+                    } else if (blueTeam) {
+                        if ((BlueIntakeSide || YellowIntakeSide)) {
+                            setOuttakeTransfer();
+                            setIntakeEntry();
+                            RailControl_Intake.SetTargetPosition(0, -0.7, 0.7);
+                            ET.reset();
+                            intakeSequence++;
+                        } else if (RedIntakeSide) {
+                            wheelReverse();
+                        } else {
+                            wheelOn();
+                        }
+                    } else if (!blueTeam && !redTeam) {
+                        if (RedIntakeSide || YellowIntakeSide || BlueIntakeSide) {
+                            setOuttakeTransfer();
+                            setIntakeEntry();
+                            RailControl_Intake.SetTargetPosition(0, -0.7, 0.7);
+                            ET.reset();
+                            intakeSequence++;
+                        }
                     }
                     break;
 
                 case 3:
                     if (ET.milliseconds() > 500) {
                         if (Intake_Rail.getCurrentPosition() > -150) {
-                            setFolded();
+                            setIntakeFolded();
                             wheelOff();
                             ET.reset();
-                            intake++;
+                            intakeSequence++;
                         }
                     }
                     break;
@@ -243,22 +272,131 @@ public class Sprint3Teleop extends LinearOpMode {
                 case 4:
                     if (ET.milliseconds() > 500) {
                         wheelReverse();
-                        intake++;
+                        intakeSequence++;
                     }
                     break;
 
                 case 5:
                     if (DO.getDistance(DistanceUnit.CM) < 10) {
                         wheelOff();
-                        intake++;
+                        setIntakeEntry();
+                        intakeSequence++;
                     }
+                    break;
+
+                default:
+                    break;
+            }
+
+            switch (outtakeBucketSequence) {
+
+                case 1:
+                    if (DO.getDistance(DistanceUnit.CM) < 10) {
+                        RailControl_Outtake.SetTargetPosition(outtakeTargetPosition - 500,-0.9,0.9);
+                        setSwivelPosition(0);
+                        OuttakeBucket.setPosition(0.3);
+                        outtakeBucketSequence++;
+                    } else {
+                        outtakeBucketSequence = 1000;
+                        outtakeTargetPosition = 0;
+                    }
+                    break;
+
+                case 2:
+                    if (Outtake_Rail.getCurrentPosition() < -outtakeTargetPosition + 700) {
+                        OuttakeBucket.setPosition(0.3);
+                        outtakeBucketSequence++;
+                    }
+                    break;
+
+                case 3:
+                    if (Outtake_Rail.getCurrentPosition() < -outtakeTargetPosition + 150) {
+
+                        outtakeBucketSequence++;
+                    }
+                    break;
+
+                default:
+                    break;
+            }
+
+            switch (resetAttachments) {
+
+                case 1:
+                    setIntakeEntry();
+                    setOuttakeBase();
+                    wheelOff();
+                    RailControl_Intake.SetTargetPosition(0,-0.7,0.7);
+                    RailControl_Outtake.SetTargetPosition(500,-0.7,0.7);
+                    setSwivelPosition(0);
+                    intakeSequence = 1000;
+                    outtakeBucketSequence = 1000;
+                    outtakeTargetPosition = 0;
+                    resetAttachments++;
+                    break;
+
+                case 2:
+                    if (Outtake_Rail.getCurrentPosition() > -600) {
+                        RailControl_Outtake.SetTargetPosition(0,-0.7,0.7);
+                        resetAttachments++;
+                    }
+                    break;
+
 
                 default:
                     break;
             }
 
             /*****************************************************************
-             * Button Guide (G2) :
+             * Button Guide (G1) :
+             *****************************************************************/
+
+            if (!button_guide_already_pressed) {
+                if (gamepad1.guide) {
+                    redTeam = false;
+                    blueTeam = false;
+                    button_guide_already_pressed = true;
+                }
+            } else {
+                if (!gamepad1.guide) {
+                    button_guide_already_pressed = false;
+                }
+            }
+
+            /*****************************************************************
+             * Button Back (G1) :
+             *****************************************************************/
+
+            if (!button_back_already_pressed) {
+                if (gamepad1.back) {
+                    redTeam = false;
+                    blueTeam = true;
+                    button_back_already_pressed = true;
+                }
+            } else {
+                if (!gamepad1.back) {
+                    button_back_already_pressed = false;
+                }
+            }
+
+            /*****************************************************************
+             * Button Start (G1) :
+             *****************************************************************/
+
+            if (!button_start_already_pressed) {
+                if (gamepad1.start) {
+                    redTeam = true;
+                    blueTeam = false;
+                    button_start_already_pressed = true;
+                }
+            } else {
+                if (!gamepad1.start) {
+                    button_start_already_pressed = false;
+                }
+            }
+
+            /*****************************************************************
+             * Button Guide (G2) : Turn off Intake Wheels
              *****************************************************************/
 
             if (!button_guide_already_pressed2) {
@@ -273,9 +411,8 @@ public class Sprint3Teleop extends LinearOpMode {
             }
 
             /*****************************************************************
-             * Button Back (G2) :
+             * Button Back (G2) : Reverse Intake Wheels
              *****************************************************************/
-
 
             if (!button_back_already_pressed2) {
                 if (gamepad2.back) {
@@ -289,7 +426,7 @@ public class Sprint3Teleop extends LinearOpMode {
             }
 
             /*****************************************************************
-             * Button Start (G2) :
+             * Button Start (G2) : Turn on Intake Wheels
              *****************************************************************/
 
             if (!button_start_already_pressed2) {
@@ -304,13 +441,14 @@ public class Sprint3Teleop extends LinearOpMode {
             }
 
             /*****************************************************************
-             * Button Y (G2) :
+             * Button Y (G2) : Start the Outtake Sequence for High Bucket
              **************************************************************z***/
 
             if (!button_y_already_pressed2) {
                 if (gamepad2.y) {
 
-                    intake = 0;
+                    outtakeTargetPosition = 3000;
+                    outtakeBucketSequence = 1;
 
                     button_y_already_pressed2 = true;
                 }
@@ -321,13 +459,14 @@ public class Sprint3Teleop extends LinearOpMode {
             }
 
             /*****************************************************************
-             * Button B (G2) :
+             * Button B (G2) : Start the Outtake Sequence for Low Bucket
              *****************************************************************/
 
             if (!button_b_already_pressed2) {
                 if (gamepad2.b) {
 
-                    RailControl_Outtake.SetTargetPosition(0,-0.7,0.7);
+                    outtakeTargetPosition = 1700;
+                    outtakeBucketSequence = 1;
 
                     button_b_already_pressed2 = true;
                 }
@@ -338,13 +477,13 @@ public class Sprint3Teleop extends LinearOpMode {
             }
 
             /*****************************************************************
-             * Button A (G2) :
+             * Button A (G2) : Start the Intake Sequence
              *****************************************************************/
 
             if (!button_a_already_pressed2) {
                 if (gamepad2.a) {
 
-                    setIntake();
+                    intakeSequence = 0;
 
                     button_a_already_pressed2 = true;
                 }
@@ -355,13 +494,13 @@ public class Sprint3Teleop extends LinearOpMode {
             }
 
             /*****************************************************************
-             * Button X (G2) :
+             * Button X (G2) : Reset All Attachments to Start Position
              *****************************************************************/
 
             if (!button_x_already_pressed2) {
                 if (gamepad2.x) {
 
-                    setFolded();
+                    resetAttachments = 1;
 
                     button_x_already_pressed2 = true;
                 }
@@ -378,7 +517,7 @@ public class Sprint3Teleop extends LinearOpMode {
             if (!button_dpad_right_already_pressed2) {
                 if (gamepad2.dpad_right) {
 
-                    setTransfer();
+                    setOuttake();
 
                     button_dpad_right_already_pressed2 = true;
                 }
@@ -395,7 +534,7 @@ public class Sprint3Teleop extends LinearOpMode {
             if (!button_dpad_left_already_pressed2) {
                 if (gamepad2.dpad_left) {
 
-                    setGrab();
+                    setOuttakeDrop();
 
                     button_dpad_left_already_pressed2 = true;
                 }
@@ -412,7 +551,7 @@ public class Sprint3Teleop extends LinearOpMode {
             if (!button_dpad_up_already_pressed2) {
                 if (gamepad2.dpad_up) {
 
-                    setOuttake();
+                    RailControl_Outtake.SetTargetPosition(1000,-0.7,0.7);
 
                     button_dpad_up_already_pressed2 = true;
                 }
@@ -429,7 +568,7 @@ public class Sprint3Teleop extends LinearOpMode {
             if (!button_dpad_down_already_pressed2) {
                 if (gamepad2.dpad_down) {
 
-
+                    RailControl_Outtake.SetTargetPosition(2000,-0.7,0.7);
 
                     button_dpad_down_already_pressed2 = true;
                 }
@@ -475,13 +614,20 @@ public class Sprint3Teleop extends LinearOpMode {
 
             RailControl_Intake.RailTask();
             RailControl_Outtake.RailTask();
-            Swivel_Control.BaseTask();
+            telemetry.addData("Red Team?", redTeam);
+            telemetry.addData("Blue Team?", blueTeam);
+            telemetry.addLine();
             Color_Distance_Detector();
+            telemetry.addData("Blue Sample Intake?", BlueIntakeSide);
+            telemetry.addData("Red Sample Intake?", RedIntakeSide);
+            telemetry.addData("Yellow Sample Intake?", YellowIntakeSide);
+            telemetry.addData("Unknown Sample Intake?", UnknownIntakeSide);
             telemetry.addLine();
             telemetry.addData("Intake Distance Sensor Value:", DI.getDistance(DistanceUnit.CM));
             telemetry.addData("Outtake Distance Sensor Value:", DO.getDistance(DistanceUnit.CM));
             telemetry.addData("Intake Rail Encoder Value:", Intake_Rail.getCurrentPosition());
-            telemetry.addData("Swivel Ecoder Value:", Swivel.getCurrentPosition());
+            telemetry.addData("Outtake Rail Encoder Value:", Outtake_Rail.getCurrentPosition());
+            telemetry.addData("Swivel Encoder Value:", Swivel.getCurrentPosition());
             telemetry.update();
 
         }
@@ -511,11 +657,11 @@ public class Sprint3Teleop extends LinearOpMode {
         //Servo Presets
         IntakeWheels.setDirection(CRServo.Direction.FORWARD);
         IntakeBucket.setDirection(Servo.Direction.FORWARD);
-        setFolded();
+        setIntakeFolded();
 
         OuttakeBucket.setDirection(Servo.Direction.FORWARD);
         OuttakeWrist.setDirection(Servo.Direction.REVERSE);
-        setGrab();
+        setOuttakeBase();
     }
 
     private void Color_Distance_Detector() {
@@ -608,54 +754,44 @@ public class Sprint3Teleop extends LinearOpMode {
 
     }
 
-    public void setIntakePosition(int position, double power) {
+    public void setSwivelPosition (int position){
 
-        RailControl_Intake.SetTargetPosition(position, -power, power);
-
-    }
-
-    public void setOuttakePosition(int position, double power) {
-
-        Outtake_Rail.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        Outtake_Rail.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        RailControl_Outtake.SetTargetPosition(position, -power, power);
-
-    }
-
-    public void resetOuttakePosition(double power) {
-
-        RailControl_Outtake.SetTargetPosition(150, -power, power);
-        Outtake_Rail.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        Outtake_Rail.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        Swivel.setTargetPosition(position);
+        Swivel.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        Swivel.setPower(0.15);
 
     }
 
     public void setIntake() {
-        IntakeBucket.setPosition(0.28);
+        IntakeBucket.setPosition(0.3);
     }
 
-    public void setEntry() {
+    public void setIntakeEntry() {
         IntakeBucket.setPosition(0.5);
     }
 
-    public void setFolded() {
+    public void setIntakeFolded() {
         IntakeBucket.setPosition(0.8);
     }
 
-    public void setTransfer() {
+    public void setOuttake() {
+        OuttakeBucket.setPosition(0.2);
+        OuttakeWrist.setPosition(0.5);
+    }
+
+    public void setOuttakeTransfer() {
         OuttakeBucket.setPosition(0.5);
         OuttakeWrist.setPosition(0.2);
     }
 
-    public void setOuttake() {
-        OuttakeBucket.setPosition(0.4);
-        OuttakeWrist.setPosition(0);
+    public void setOuttakeBase() {
+        OuttakeBucket.setPosition(0.5);
+        OuttakeWrist.setPosition(0.78);
     }
 
-    public void setGrab() {
-        OuttakeBucket.setPosition(0.5);
-        OuttakeWrist.setPosition(0.83);
-
+    public void setOuttakeDrop() {
+        OuttakeBucket.setPosition(0.2);
+        OuttakeWrist.setPosition(0.2);
     }
 
     public void wheelOn() {
