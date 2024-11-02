@@ -323,25 +323,34 @@ public class Sprint3Teleop extends LinearOpMode {
             switch (resetAttachments) {
 
                 case 1:
-                    setIntakeEntry();
-                    setOuttakeBase();
-                    wheelOff();
-                    RailControl_Intake.SetTargetPosition(0,-0.7,0.7);
-                    RailControl_Outtake.SetTargetPosition(500,-0.7,0.7);
-                    setSwivelPosition(0);
-                    intakeSequence = 1000;
-                    outtakeBucketSequence = 1000;
-                    outtakeTargetPosition = 0;
+                    setOuttake();
+                    ET.reset();
                     resetAttachments++;
                     break;
 
                 case 2:
-                    if (Outtake_Rail.getCurrentPosition() > -600) {
-                        RailControl_Outtake.SetTargetPosition(0,-0.7,0.7);
+                    if (ET.milliseconds() > 2500) {
+                        setIntakeEntry();
+                        setOuttakeBase();
+                        wheelOff();
+                        RailControl_Intake.SetTargetPosition(0, -0.7, 0.7);
+                        RailControl_Outtake.SetTargetPosition(100, -0.7, 0.7);
+                        setSwivelPosition(100);
+                        intakeSequence = 1000;
+                        outtakeBucketSequence = 1000;
+                        outtakeTargetPosition = 0;
                         resetAttachments++;
                     }
                     break;
 
+                case 3:
+                    if (Outtake_Rail.getCurrentPosition() > -200) {
+                        RailControl_Outtake.SetTargetPosition(0,-0.7,0.7);
+                        setSwivelPosition(0);
+                        resetAttachments++;
+                        ET.reset();
+                    }
+                    break;
 
                 default:
                     break;
@@ -447,7 +456,7 @@ public class Sprint3Teleop extends LinearOpMode {
             if (!button_y_already_pressed2) {
                 if (gamepad2.y) {
 
-                    outtakeTargetPosition = 3000;
+                    outtakeTargetPosition = 3300;
                     outtakeBucketSequence = 1;
 
                     button_y_already_pressed2 = true;
@@ -465,7 +474,7 @@ public class Sprint3Teleop extends LinearOpMode {
             if (!button_b_already_pressed2) {
                 if (gamepad2.b) {
 
-                    outtakeTargetPosition = 1700;
+                    outtakeTargetPosition = 2000;
                     outtakeBucketSequence = 1;
 
                     button_b_already_pressed2 = true;
@@ -534,7 +543,7 @@ public class Sprint3Teleop extends LinearOpMode {
             if (!button_dpad_left_already_pressed2) {
                 if (gamepad2.dpad_left) {
 
-                    setOuttakeDrop();
+
 
                     button_dpad_left_already_pressed2 = true;
                 }
@@ -551,7 +560,7 @@ public class Sprint3Teleop extends LinearOpMode {
             if (!button_dpad_up_already_pressed2) {
                 if (gamepad2.dpad_up) {
 
-                    RailControl_Outtake.SetTargetPosition(1000,-0.7,0.7);
+
 
                     button_dpad_up_already_pressed2 = true;
                 }
@@ -568,7 +577,7 @@ public class Sprint3Teleop extends LinearOpMode {
             if (!button_dpad_down_already_pressed2) {
                 if (gamepad2.dpad_down) {
 
-                    RailControl_Outtake.SetTargetPosition(2000,-0.7,0.7);
+
 
                     button_dpad_down_already_pressed2 = true;
                 }
@@ -776,7 +785,7 @@ public class Sprint3Teleop extends LinearOpMode {
 
     public void setOuttake() {
         OuttakeBucket.setPosition(0.2);
-        OuttakeWrist.setPosition(0.5);
+        OuttakeWrist.setPosition(0.6);
     }
 
     public void setOuttakeTransfer() {
@@ -787,11 +796,6 @@ public class Sprint3Teleop extends LinearOpMode {
     public void setOuttakeBase() {
         OuttakeBucket.setPosition(0.5);
         OuttakeWrist.setPosition(0.78);
-    }
-
-    public void setOuttakeDrop() {
-        OuttakeBucket.setPosition(0.2);
-        OuttakeWrist.setPosition(0.2);
     }
 
     public void wheelOn() {
