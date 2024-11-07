@@ -39,7 +39,7 @@ public class BlueObservation extends LinearOpMode {
     Rail_ControlV3 RailControl_Intake;
     Rail_ControlV3 RailControl_Outtake;
     Mech_Drive_FAST MechDrive;
-    Direction_ControlV2 DirectionControl;
+    Direction_Control DirectionControl;
 
     //Servos
     static Servo OuttakeBucket; // Servo Mode
@@ -54,10 +54,15 @@ public class BlueObservation extends LinearOpMode {
     static DistanceSensor DO;
 
     //IMU
-    IMU IMU;
+    BNO055IMU IMU;
+
+    //IMU Orientation
+    byte AXIS_MAP_CONFIG_BYTE = 0x18; //rotates control hub 90 degrees around y axis by swapping x and z axis
+    byte AXIS_MAP_SIGN_BYTE = 0x02; //Negates the remapped z-axis
+
     //Variables For IMU Gyro
     double globalangle;
-//    BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
+    BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
     Orientation orientation;
     //Gyrocontinuity Variables
     double current_value;
@@ -97,7 +102,7 @@ public class BlueObservation extends LinearOpMode {
     boolean button_guide_already_pressed = false;
     boolean button_guide_already_pressed2 = false;
 
-    //sensor
+    //booleans for intake color detection
     boolean UnknownIntakeSide;
     boolean BlueIntakeSide;
     boolean RedIntakeSide;
@@ -129,10 +134,11 @@ public class BlueObservation extends LinearOpMode {
 
     //Elapsed Timer
     ElapsedTime ET = new ElapsedTime();
+    ElapsedTime ET_Delay = new ElapsedTime();
 
     public void runOpMode() {
 
-        //Motor Initalization
+        //Motor Initialization
         BackLeft = hardwareMap.get(DcMotor.class, "leftBack");
         BackRight = hardwareMap.get(DcMotor.class, "rightBack");
         FrontLeft = hardwareMap.get(DcMotor.class, "leftFront");
@@ -141,17 +147,20 @@ public class BlueObservation extends LinearOpMode {
         Outtake_Rail = hardwareMap.get(DcMotor.class, "OuttakeRail");
         Swivel = hardwareMap.get(DcMotor.class,"Swivel");
 
-        //Servo Initalization
+        //Servo Initialization
         IntakeBucket = hardwareMap.get(Servo.class,"IntakeBucket");
         OuttakeBucket = hardwareMap.get(Servo.class,"OuttakeBucket");
         IntakeWheels = hardwareMap.get(CRServo.class, "IntakeWheels");
         OuttakeWrist = hardwareMap.get(Servo.class,"OuttakeWrist");
         Claw = hardwareMap.get(CRServo.class,"Claw");
 
-        //Sensor Initalization
+        //Sensor Initialization
         CI = hardwareMap.get(NormalizedColorSensor.class,"CI");
         DI = hardwareMap.get(DistanceSensor.class,"DI");
         DO = hardwareMap.get(DistanceSensor.class,"DO");
+
+        //imu initialization
+        IMU = hardwareMap.get(BNO055IMU.class, "imu");
 
         //Set Drive Motor Directions
         FrontRight.setDirection(DcMotorSimple.Direction.FORWARD);
@@ -162,20 +171,13 @@ public class BlueObservation extends LinearOpMode {
         //Set Servo and Motor Presets
         AttachmentPresets();
 
-        //imu initialization
-        IMU = hardwareMap.get(IMU.class, "imu");
-
-        //Configure the IMU orientation for GyroTurning
-        RevHubOrientationOnRobot.LogoFacingDirection logoDirection = RevHubOrientationOnRobot.LogoFacingDirection.UP;
-        RevHubOrientationOnRobot.UsbFacingDirection usbDirection  = RevHubOrientationOnRobot.UsbFacingDirection.FORWARD;
-        RevHubOrientationOnRobot orientationOnRobot = new RevHubOrientationOnRobot(logoDirection, usbDirection);
-
-        IMU.initialize(new IMU.Parameters(orientationOnRobot));
-        globalangle = 0;
+        //MechDrive Object
+        MechDrive = new Mech_Drive_FAST(FrontRight, FrontLeft, BackRight, BackLeft, MoveDirection.FORWARD, telemetry);
 
         //direction control object
-        DirectionControl = new Direction_ControlV2(IMU, FrontLeft, FrontRight, BackLeft, BackRight, logoDirection, usbDirection);
+        DirectionControl = new Direction_Control(IMU, FrontLeft, FrontRight, BackLeft, BackRight);
 
+        //rail control objects
         RailControl_Intake = new Rail_ControlV3(Intake_Rail);
         RailControl_Outtake = new Rail_ControlV3(Outtake_Rail);
 
@@ -185,7 +187,21 @@ public class BlueObservation extends LinearOpMode {
         FrontLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         FrontRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
+        //Configure IMU for GyroTurning
+        parameters.angleUnit = BNO055IMU.AngleUnit.DEGREES;
+        IMU.initialize(parameters);
+        globalangle = 0;
+
+        //Configure the control hub orientation
+        IMU.write8(BNO055IMU.Register.OPR_MODE, BNO055IMU.SensorMode.CONFIG.bVal & 0x0F);
+        sleep(100);
+        IMU.write8(BNO055IMU.Register.AXIS_MAP_CONFIG, AXIS_MAP_CONFIG_BYTE & 0x0F);
+        IMU.write8(BNO055IMU.Register.AXIS_MAP_SIGN, AXIS_MAP_SIGN_BYTE & 0x0F);
+        IMU.write8(BNO055IMU.Register.OPR_MODE, BNO055IMU.SensorMode.IMU.bVal & 0x0F);
+        sleep(100);
+
         ET.reset();
+        ET_Delay.reset();
 
         waitForStart();
 
@@ -489,9 +505,9 @@ public class BlueObservation extends LinearOpMode {
 
             switch (programOrder) {
 
-                case 9:
-                    if (ET.milliseconds() > 5000) {
-                        DirectionControl.SetTargetDirection(75, 0.75);
+                case 0:
+                    if (ET.milliseconds() > 1000) {
+                        DirectionControl.SetTargetDirection(75, 0.5);
                         if (GyroContinuity() > 74) {
                             DirectionControl.Override();
                             programOrder++;
@@ -515,10 +531,11 @@ public class BlueObservation extends LinearOpMode {
 
             RailControl_Intake.RailTask();
             RailControl_Outtake.RailTask();
-//            MechDrive.Task(GyroContinuity());
+            MechDrive.Task(GyroContinuity());
             DirectionControl.GyroTask();
             telemetry.addData("Program Order", programOrder);
             telemetry.addData("Angle", GyroContinuity());
+            telemetry.addData("Elapsed Time", ET.milliseconds());
             telemetry.addLine();
             telemetry.addData("Red Team?", redTeam);
             telemetry.addData("Blue Team?", blueTeam);
@@ -707,9 +724,16 @@ public class BlueObservation extends LinearOpMode {
         IntakeWheels.setPower(-0.8);
     }
 
+    public void resetDriveEncoders() {
+        FrontRight.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        BackRight.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        FrontRight.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        BackRight.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+    }
+
     private double GyroContinuity() {
 
-        orientation = IMU.getRobotOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+        orientation = IMU.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
 
         current_value = orientation.firstAngle;
 
