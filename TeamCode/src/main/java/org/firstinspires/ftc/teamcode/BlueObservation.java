@@ -2,21 +2,30 @@ package org.firstinspires.ftc.teamcode;
 
 import android.graphics.Color;
 
+import com.qualcomm.hardware.bosch.BHI260IMU;
+import com.qualcomm.hardware.bosch.BNO055IMU;
+import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
+import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.hardware.NormalizedColorSensor;
 import com.qualcomm.robotcore.hardware.NormalizedRGBA;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 
-@TeleOp(name = "Sprint3Teleop",  group = "MecanumDrive")
-public class Sprint3Teleop extends LinearOpMode {
+@Autonomous(name = "BlueObservation",  group = "MecanumDrive")
+public class BlueObservation extends LinearOpMode {
 
     //Motors
     static DcMotor BackLeft;
@@ -29,6 +38,8 @@ public class Sprint3Teleop extends LinearOpMode {
 
     Rail_ControlV3 RailControl_Intake;
     Rail_ControlV3 RailControl_Outtake;
+    Mech_Drive_FAST MechDrive;
+    Direction_ControlV2 DirectionControl;
 
     //Servos
     static Servo OuttakeBucket; // Servo Mode
@@ -41,6 +52,17 @@ public class Sprint3Teleop extends LinearOpMode {
     static NormalizedColorSensor CI;
     static DistanceSensor DI;
     static DistanceSensor DO;
+
+    //IMU
+    IMU IMU;
+    //Variables For IMU Gyro
+    double globalangle;
+//    BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
+    Orientation orientation;
+    //Gyrocontinuity Variables
+    double current_value;
+    double prev_value = 0;
+    double final_value;
 
     //Button Pressing Variables
     boolean button_a_already_pressed = false;
@@ -95,6 +117,7 @@ public class Sprint3Teleop extends LinearOpMode {
     boolean redTeam = false;
 
     //sequence managers
+    int programOrder = 0;
     int intakeSequence = 1000;
     int outtakeBucketSequence = 1000;
     int outtakeTargetPosition;
@@ -139,6 +162,20 @@ public class Sprint3Teleop extends LinearOpMode {
         //Set Servo and Motor Presets
         AttachmentPresets();
 
+        //imu initialization
+        IMU = hardwareMap.get(IMU.class, "imu");
+
+        //Configure the IMU orientation for GyroTurning
+        RevHubOrientationOnRobot.LogoFacingDirection logoDirection = RevHubOrientationOnRobot.LogoFacingDirection.UP;
+        RevHubOrientationOnRobot.UsbFacingDirection usbDirection  = RevHubOrientationOnRobot.UsbFacingDirection.FORWARD;
+        RevHubOrientationOnRobot orientationOnRobot = new RevHubOrientationOnRobot(logoDirection, usbDirection);
+
+        IMU.initialize(new IMU.Parameters(orientationOnRobot));
+        globalangle = 0;
+
+        //direction control object
+        DirectionControl = new Direction_ControlV2(IMU, FrontLeft, FrontRight, BackLeft, BackRight, logoDirection, usbDirection);
+
         RailControl_Intake = new Rail_ControlV3(Intake_Rail);
         RailControl_Outtake = new Rail_ControlV3(Outtake_Rail);
 
@@ -148,60 +185,11 @@ public class Sprint3Teleop extends LinearOpMode {
         FrontLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         FrontRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
+        ET.reset();
+
         waitForStart();
 
         while (opModeIsActive()) {
-
-            /*****************************************************************
-             * Bumper Right/Left (G1) - Set Low/High Power Mode for driving
-             *****************************************************************/
-
-            if (gamepad1.right_bumper) {
-                lowPowerSetting = true;
-            } else {
-                lowPowerSetting = false;
-            }
-
-            if (gamepad1.left_bumper) {
-                highPowerSetting = true;
-            } else {
-                highPowerSetting = false;
-            }
-
-            if (lowPowerSetting || highPowerSetting) {
-                if (lowPowerSetting) {
-                    movement = 0.4;
-                }
-                if (highPowerSetting) {
-                    movement = 1;
-                }
-            } else {
-                if (lowMovement) {
-                    movement = 0.1;
-                } else {
-                    movement = 0.85;
-                }
-            }
-
-            /******************************************************************
-             * Left/Right Analog Sticks (G1) - Movement
-             *****************************************************************/
-
-            double y = -gamepad1.left_stick_y * movement;
-            double x = gamepad1.left_stick_x * movement;
-            double rx = gamepad1.right_stick_x * movement;
-
-            double denominator = Math.max(Math.abs(y) + Math.abs(x) + Math.abs(rx), 1);
-
-            double FLPower = (y + x + rx + l) / denominator;
-            double BLPower = (y - x + rx + l) / denominator;
-            double FRPower = (y - x - rx - l) / denominator;
-            double BRPower = (y + x - rx - l) / denominator;
-
-            FrontLeft.setPower(FLPower);
-            BackLeft.setPower(BLPower);
-            FrontRight.setPower(FRPower);
-            BackRight.setPower(BRPower);
 
             /******************************************************************
              * Automatic Sequence Managers
@@ -498,313 +486,40 @@ public class Sprint3Teleop extends LinearOpMode {
                     break;
             }
 
-            /*****************************************************************
-             * Button Guide (G1) :
-             *****************************************************************/
 
-            if (!button_guide_already_pressed) {
-                if (gamepad1.guide) {
-                    redTeam = false;
-                    blueTeam = false;
-                    button_guide_already_pressed = true;
-                }
-            } else {
-                if (!gamepad1.guide) {
-                    button_guide_already_pressed = false;
-                }
-            }
+            switch (programOrder) {
 
-            /*****************************************************************
-             * Button Back (G1) :
-             *****************************************************************/
+                case 9:
+                    if (ET.milliseconds() > 5000) {
+                        DirectionControl.SetTargetDirection(75, 0.75);
+                        if (GyroContinuity() > 74) {
+                            DirectionControl.Override();
+                            programOrder++;
+                        }
+                    }
+                    break;
 
-            if (!button_back_already_pressed) {
-                if (gamepad1.back) {
-                    redTeam = false;
-                    blueTeam = true;
-                    setSwivelPosition(0);
-                    button_back_already_pressed = true;
-                }
-            } else {
-                if (!gamepad1.back) {
-                    button_back_already_pressed = false;
-                }
-            }
-
-            /*****************************************************************
-             * Button Start (G1) :
-             *****************************************************************/
-
-            if (!button_start_already_pressed) {
-                if (gamepad1.start) {
-                    redTeam = true;
-                    blueTeam = false;
-                    setSwivelPosition(0);
-                    button_start_already_pressed = true;
-                }
-            } else {
-                if (!gamepad1.start) {
-                    button_start_already_pressed = false;
-                }
-            }
-
-            /*****************************************************************
-             * Button A (G1) :
-             *****************************************************************/
-
-            if (!button_a_already_pressed) {
-                if (gamepad1.a) {
-
-                    intakeSpecimen = 1;
-
-                    button_a_already_pressed = true;
-                }
-            } else {
-                if (!gamepad2.a) {
-                    button_a_already_pressed = false;
-                }
-            }
-
-            /*****************************************************************
-             * Button Y (G1) :
-             *****************************************************************/
-
-            if (!button_y_already_pressed) {
-                if (gamepad1.y) {
-
-                    outtakeSpecimen = 1;
-
-                    button_y_already_pressed = true;
-                }
-            } else {
-                if (!gamepad1.y) {
-                    button_y_already_pressed = false;
-                }
-            }
-
-            /*****************************************************************
-             * Button Guide (G2) : Turn off Intake Wheels
-             *****************************************************************/
-
-            if (!button_guide_already_pressed2) {
-                if (gamepad2.guide) {
-                    wheelOff();
-                    button_guide_already_pressed2 = true;
-                }
-            } else {
-                if (!gamepad2.guide) {
-                    button_guide_already_pressed2 = false;
-                }
-            }
-
-            /*****************************************************************
-             * Button Back (G2) : Reverse Intake Wheels
-             *****************************************************************/
-
-            if (!button_back_already_pressed2) {
-                if (gamepad2.back) {
-                    wheelReverse();
-                    button_back_already_pressed2 = true;
-                }
-            } else {
-                if (!gamepad2.back) {
-                    button_back_already_pressed2 = false;
-                }
-            }
-
-            /*****************************************************************
-             * Button Start (G2) : Turn on Intake Wheels
-             *****************************************************************/
-
-            if (!button_start_already_pressed2) {
-                if (gamepad2.start) {
-                    wheelOn();
-                    button_start_already_pressed2 = true;
-                }
-            } else {
-                if (!gamepad2.start) {
-                    button_start_already_pressed2 = false;
-                }
-            }
-
-            /*****************************************************************
-             * Button Y (G2) : Start the Outtake Sequence for High Bucket
-             **************************************************************z***/
-
-            if (!button_y_already_pressed2) {
-                if (gamepad2.y) {
-
-                    outtakeTargetPosition = 3300;
-                    outtakeBucketSequence = 1;
-
-                    button_y_already_pressed2 = true;
-                }
-            } else {
-                if (!gamepad2.y) {
-                    button_y_already_pressed2 = false;
-                }
-            }
-
-            /*****************************************************************
-             * Button B (G2) : Start the Outtake Sequence for Low Bucket
-             *****************************************************************/
-
-            if (!button_b_already_pressed2) {
-                if (gamepad2.b) {
-
-                    outtakeTargetPosition = 2000;
-                    outtakeBucketSequence = 1;
-
-                    button_b_already_pressed2 = true;
-                }
-            } else {
-                if (!gamepad2.b) {
-                    button_b_already_pressed2 = false;
-                }
-            }
-
-            /*****************************************************************
-             * Button A (G2) : Start the Intake Sequence
-             *****************************************************************/
-
-            if (!button_a_already_pressed2) {
-                if (gamepad2.a) {
-
-                    intakeSequence = 1;
-
-                    button_a_already_pressed2 = true;
-                }
-            } else {
-                if (!gamepad2.a) {
-                    button_a_already_pressed2 = false;
-                }
-            }
-
-            /*****************************************************************
-             * Button X (G2) : Reset All Attachments to Start Position
-             *****************************************************************/
-
-            if (!button_x_already_pressed2) {
-                if (gamepad2.x) {
-
-                    if (outtakeTargetPosition > 100) {
-                        resetAttachments = 1;
-                    } else if (outtakeTargetPosition < 100) {
-                        resetAttachments = 2;
+                case 1:
+                    DirectionControl.SetTargetDirection(90, 0.2);
+                    if (GyroContinuity() > 89) {
+                        DirectionControl.Override();
+                        ET.reset();
+                        programOrder++;
                     }
 
-                    button_x_already_pressed2 = true;
-                }
-            } else {
-                if (!gamepad2.x) {
-                    button_x_already_pressed2 = false;
-                }
+                default:
+                    break;
+
             }
 
-            /*****************************************************************
-             * Dpad Right (G2) :
-             *****************************************************************/
-
-            if (!button_dpad_right_already_pressed2) {
-                if (gamepad2.dpad_right) {
-
-                    setObservation = 1;
-
-                    button_dpad_right_already_pressed2 = true;
-                }
-            } else {
-                if (!gamepad2.dpad_right) {
-                    button_dpad_right_already_pressed2 = false;
-                }
-            }
-
-            /*****************************************************************
-             * Dpad Left (G2) :
-             *****************************************************************/
-
-            if (!button_dpad_left_already_pressed2) {
-                if (gamepad2.dpad_left) {
-
-                    outtakeObservation = 1;
-
-                    button_dpad_left_already_pressed2 = true;
-                }
-            } else {
-                if (!gamepad2.dpad_left) {
-                    button_dpad_left_already_pressed2 = false;
-                }
-            }
-
-            /*****************************************************************
-             * Dpad Up (G2) :
-             *****************************************************************/
-
-            if (!button_dpad_up_already_pressed2) {
-                if (gamepad2.dpad_up) {
-
-
-
-                    button_dpad_up_already_pressed2 = true;
-                }
-            } else {
-                if (!gamepad2.dpad_up) {
-                    button_dpad_up_already_pressed2 = false;
-                }
-            }
-
-            /*****************************************************************
-             * Dpad Down (G2) :
-             *****************************************************************/
-
-            if (!button_dpad_down_already_pressed2) {
-                if (gamepad2.dpad_down) {
-
-
-
-                    button_dpad_down_already_pressed2 = true;
-                }
-            } else {
-                if (!gamepad2.dpad_down) {
-                    button_dpad_down_already_pressed2 = false;
-                }
-            }
-
-            /*****************************************************************
-             * Right Bumper (G2) :
-             *****************************************************************/
-
-            if (!button_bumper_right_already_pressed2) {
-                if (gamepad2.right_bumper) {
-
-
-
-                    button_bumper_right_already_pressed2 = true;
-                }
-            } else {
-                if (!gamepad2.right_bumper) {
-                    button_bumper_right_already_pressed2 = false;
-                }
-            }
-
-            /*****************************************************************
-             * Left Bumper (G2) :
-             *****************************************************************/
-
-            if (!button_bumper_left_already_pressed2) {
-                if (gamepad2.left_bumper) {
-
-
-
-                    button_bumper_left_already_pressed2 = true;
-                }
-            } else {
-                if (!gamepad2.left_bumper) {
-                    button_bumper_left_already_pressed2 = false;
-                }
-            }
 
             RailControl_Intake.RailTask();
             RailControl_Outtake.RailTask();
+//            MechDrive.Task(GyroContinuity());
+            DirectionControl.GyroTask();
+            telemetry.addData("Program Order", programOrder);
+            telemetry.addData("Angle", GyroContinuity());
+            telemetry.addLine();
             telemetry.addData("Red Team?", redTeam);
             telemetry.addData("Blue Team?", blueTeam);
             telemetry.addLine();
@@ -990,6 +705,26 @@ public class Sprint3Teleop extends LinearOpMode {
 
     public void wheelReverse() {
         IntakeWheels.setPower(-0.8);
+    }
+
+    private double GyroContinuity() {
+
+        orientation = IMU.getRobotOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+
+        current_value = orientation.firstAngle;
+
+        final_value = current_value - prev_value;
+
+        if (final_value < -180)
+            final_value += 360;
+        else if (final_value > 180)
+            final_value -= 360;
+
+        globalangle += final_value;
+
+        prev_value = current_value;
+
+        return -globalangle;
     }
 
 }
