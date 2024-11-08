@@ -18,6 +18,7 @@ import com.qualcomm.robotcore.hardware.NormalizedRGBA;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcontroller.external.samples.UtilityOctoQuadConfigMenu;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
@@ -128,7 +129,6 @@ public class BlueObservation extends LinearOpMode {
     int outtakeTargetPosition;
     int resetAttachments = 1000;
     int intakeSpecimen = 1000;
-    int outtakeSpecimen = 1000;
     int setObservation = 1000;
     int outtakeObservation = 1000;
 
@@ -362,48 +362,6 @@ public class BlueObservation extends LinearOpMode {
                     break;
             }
 
-            switch (outtakeSpecimen) {
-
-                case 1:
-                    RailControl_Outtake.SetTargetPosition(1100,-0.8,0.8);
-                    outtakeSpecimen++;
-                    break;
-
-                case 2:
-                    if (Outtake_Rail.getCurrentPosition() > -1150) {
-                        Claw.setPower(1);
-                        ET.reset();
-                        outtakeSpecimen++;
-                    }
-                    break;
-
-                case 3:
-                    if (ET.milliseconds() > 500) {
-                        Claw.setPower(0);
-                        setSwivelPosition(100);
-                        ET.reset();
-                        outtakeSpecimen++;
-                    }
-                    break;
-
-                case 4:
-                    if (Swivel.getCurrentPosition() < 140) {
-                        RailControl_Outtake.SetTargetPosition(0,-0.8,0.8);
-                        outtakeSpecimen++;
-                    }
-                    break;
-
-                case 5:
-                    if (Outtake_Rail.getCurrentPosition() > -150) {
-                        setSwivelPosition(0);
-                        outtakeSpecimen++;
-                    }
-
-                default:
-                    break;
-
-            }
-
             switch (setObservation) {
 
                 case 1:
@@ -506,7 +464,83 @@ public class BlueObservation extends LinearOpMode {
             switch (programOrder) {
 
                 case 0:
+                    MechDrive.SetTargets(0,90,1100,0.5,1);
+                    RailControl_Outtake.SetTargetPosition(600,-0.7,0.7);
+                    setSwivelPosition(0);
+                    programOrder++;
+                    break;
+
+                case 1:
+                    if (MechDrive.GetTaskState() == Task_State.READY || MechDrive.GetTaskState() == Task_State.DONE) {
+                        MechDrive.SetTargets(0,0,600,0.5,1);
+                        setIntakeEntry();
+                        programOrder++;
+                    }
+                    break;
+
+                case 2:
+                    if (MechDrive.GetTaskState() == Task_State.READY || MechDrive.GetTaskState() == Task_State.DONE) {
+                        setSwivelPosition(100);
+                        RailControl_Outtake.SetTargetPosition(1500,-0.8,0.8);
+                        programOrder++;
+                    }
+                    break;
+
+                case 3:
+                    if (Outtake_Rail.getCurrentPosition() < -1400) {
+                        MechDrive.SetTargets(0,90,450,0.5,1);
+                        programOrder++;
+                    }
+                    break;
+
+                case 4:
+                    if (MechDrive.GetTaskState() == Task_State.READY || MechDrive.GetTaskState() == Task_State.DONE) {
+                        ET.reset();
+                        programOrder++;
+                    }
+                    break;
+
+                case 5:
                     if (ET.milliseconds() > 1000) {
+                        RailControl_Outtake.SetTargetPosition(1100, -0.8, 0.8);
+                        programOrder++;
+                    }
+                    break;
+
+                case 6:
+                    if (Outtake_Rail.getCurrentPosition() > -1150) {
+                        Claw.setPower(1);
+                        ET.reset();
+                        programOrder++;
+                    }
+                    break;
+
+                case 7:
+                    MechDrive.SetTargets(0,-90,500,0.5,1);
+                    if (ET.milliseconds() > 500) {
+                        Claw.setPower(0);
+                        ET.reset();
+                        programOrder++;
+                    }
+                    break;
+
+                case 8:
+                    if (MechDrive.GetTaskState() == Task_State.READY || MechDrive.GetTaskState() == Task_State.DONE) {
+                        RailControl_Outtake.SetTargetPosition(0,-0.8,0.8);
+                        MechDrive.SetTargets(0,180,1800,0.5,1);
+                        programOrder++;
+                    }
+                    break;
+
+                case 9:
+                    if (Outtake_Rail.getCurrentPosition() > -200) {
+                        setSwivelPosition(0);
+                        programOrder++;
+                    }
+                    break;
+
+                case 10:
+                    if (MechDrive.GetTaskState() == Task_State.READY || MechDrive.GetTaskState() == Task_State.DONE) {
                         DirectionControl.SetTargetDirection(75, 0.5);
                         if (GyroContinuity() > 74) {
                             DirectionControl.Override();
@@ -515,13 +549,101 @@ public class BlueObservation extends LinearOpMode {
                     }
                     break;
 
-                case 1:
+                case 11:
                     DirectionControl.SetTargetDirection(90, 0.2);
                     if (GyroContinuity() > 89) {
                         DirectionControl.Override();
                         ET.reset();
+                        resetDriveEncoders();
                         programOrder++;
                     }
+                    break;
+
+                case 12:
+                    if (ET.milliseconds() > 2000) {
+                        MechDrive.SetTargets(90,180,900,0.3,1);
+                        programOrder++;
+                    }
+                    break;
+
+                case 13:
+                    if (MechDrive.GetTaskState() == Task_State.READY || MechDrive.GetTaskState() == Task_State.DONE) {
+                        Claw.setPower(-1);
+                        ET.reset();
+                        programOrder++;
+                    }
+                    break;
+
+                case 14:
+                    if (ET.milliseconds() > 500) {
+                        MechDrive.SetTargets(90,-90,2000,0.5,1);
+                        RailControl_Outtake.SetTargetPosition(500,-0.7,0.7);
+                        setSwivelPosition(200);
+                        programOrder++;
+                    }
+                    break;
+
+                case 15:
+                    if (MechDrive.GetTaskState() == Task_State.READY || MechDrive.GetTaskState() == Task_State.DONE) {
+                        MechDrive.SetTargets(90,0,1000,0.5,1);
+                        RailControl_Outtake.SetTargetPosition(1500,-0.7,0.7);
+                        programOrder++;
+                    }
+                    break;
+
+                case 16:
+                    if (MechDrive.GetTaskState() == Task_State.READY || MechDrive.GetTaskState() == Task_State.DONE) {
+                        MechDrive.SetTargets(90,0,400,0.2,1);
+                        programOrder++;
+                    }
+                    break;
+
+                case 17:
+                    if (MechDrive.GetTaskState() == Task_State.READY || MechDrive.GetTaskState() == Task_State.DONE) {
+                        ET.reset();
+                        programOrder++;
+                    }
+                    break;
+
+                case 18:
+                    if (ET.milliseconds() > 500) {
+                        RailControl_Outtake.SetTargetPosition(1100, -0.8, 0.8);
+                        programOrder++;
+                    }
+                    break;
+
+                case 19:
+                    if (Outtake_Rail.getCurrentPosition() > -1150) {
+                        Claw.setPower(1);
+                        ET.reset();
+                        programOrder++;
+                    }
+                    break;
+
+                case 20:
+                    MechDrive.SetTargets(90,180,1300,0.5,1);
+                    if (ET.milliseconds() > 500) {
+                        Claw.setPower(0);
+                        setSwivelPosition(100);
+                        RailControl_Outtake.SetTargetPosition(0, -0.8, 0.8);
+                        ET.reset();
+                        programOrder++;
+                    }
+                    break;
+
+                case 21:
+                    if (Outtake_Rail.getCurrentPosition() > -150) {
+                        setSwivelPosition(0);
+                        programOrder++;
+                    }
+                    break;
+
+                case 22:
+                    if (MechDrive.GetTaskState() == Task_State.READY || MechDrive.GetTaskState() == Task_State.DONE) {
+                        MechDrive.SetTargets(90,90,2100,0.5,1);
+                        programOrder++;
+                    }
+                    break;
 
                 default:
                     break;
@@ -536,9 +658,6 @@ public class BlueObservation extends LinearOpMode {
             telemetry.addData("Program Order", programOrder);
             telemetry.addData("Angle", GyroContinuity());
             telemetry.addData("Elapsed Time", ET.milliseconds());
-            telemetry.addLine();
-            telemetry.addData("Red Team?", redTeam);
-            telemetry.addData("Blue Team?", blueTeam);
             telemetry.addLine();
             Color_Distance_Detector();
             telemetry.addData("Blue Sample Intake?", BlueIntakeSide);
@@ -585,6 +704,8 @@ public class BlueObservation extends LinearOpMode {
         OuttakeBucket.setDirection(Servo.Direction.FORWARD);
         OuttakeWrist.setDirection(Servo.Direction.REVERSE);
         setOuttakeBase();
+
+        Claw.setPower(-1);
     }
 
     private void Color_Distance_Detector() {
