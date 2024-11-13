@@ -2,31 +2,27 @@ package org.firstinspires.ftc.teamcode;
 
 import android.graphics.Color;
 
-import com.qualcomm.hardware.bosch.BHI260IMU;
 import com.qualcomm.hardware.bosch.BNO055IMU;
-import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
-import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.hardware.NormalizedColorSensor;
 import com.qualcomm.robotcore.hardware.NormalizedRGBA;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.TouchSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-import org.firstinspires.ftc.robotcontroller.external.samples.UtilityOctoQuadConfigMenu;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 
-@Autonomous(name = "BlueObservation",  group = "MecanumDrive")
-public class BlueObservation extends LinearOpMode {
+@Autonomous(name = "Bucket",  group = "MecanumDrive")
+public class Bucket extends LinearOpMode {
 
     //Motors
     static DcMotor BackLeft;
@@ -53,6 +49,7 @@ public class BlueObservation extends LinearOpMode {
     static NormalizedColorSensor CI;
     static DistanceSensor DI;
     static DistanceSensor DO;
+    static TouchSensor Touch;
 
     //IMU
     BNO055IMU IMU;
@@ -158,6 +155,7 @@ public class BlueObservation extends LinearOpMode {
         CI = hardwareMap.get(NormalizedColorSensor.class,"CI");
         DI = hardwareMap.get(DistanceSensor.class,"DI");
         DO = hardwareMap.get(DistanceSensor.class,"DO");
+        Touch = hardwareMap.get(TouchSensor.class,"Touch");
 
         //imu initialization
         IMU = hardwareMap.get(BNO055IMU.class, "imu");
@@ -210,85 +208,89 @@ public class BlueObservation extends LinearOpMode {
             switch (programOrder) {
 
                 case 0:
-                    MechDrive.SetTargets(0,90,1100,0.5,1);
-                    RailControl_Outtake.SetTargetPosition(600,-0.7,0.7);
+                    MechDrive.SetTargets(0,-90,500,0.5,1);
                     setSwivelPosition(0);
                     programOrder++;
                     break;
 
                 case 1:
-                    if (MechDrive.GetTaskState() == Task_State.READY || MechDrive.GetTaskState() == Task_State.DONE) {
-                        MechDrive.SetTargets(0,0,600,0.5,1);
+                    if (MechDrive.GetTaskState() == Task_State.DONE || MechDrive.GetTaskState() == Task_State.READY) {
+                        MechDrive.SetTargets(0, 180, 900, 0.5, 1);
                         setIntakeEntry();
                         programOrder++;
                     }
                     break;
 
                 case 2:
-                    if (MechDrive.GetTaskState() == Task_State.READY || MechDrive.GetTaskState() == Task_State.DONE) {
-                        setSwivelPosition(100);
-                        RailControl_Outtake.SetTargetPosition(1500,-0.8,0.8);
+                    if (MechDrive.GetTaskState() == Task_State.DONE || MechDrive.GetTaskState() == Task_State.READY) {
+                        MechDrive.SetTargets(0, 180, 3000, 0.2, 1);
                         programOrder++;
                     }
                     break;
 
                 case 3:
-                    if (Outtake_Rail.getCurrentPosition() < -1400) {
-                        MechDrive.SetTargets(0,90,350,0.5,1);
-                        programOrder++;
-                    }
-                    break;
-
-                case 4:
-                    if (MechDrive.GetTaskState() == Task_State.READY || MechDrive.GetTaskState() == Task_State.DONE) {
+                    if (!Touch.isPressed()) {
+                        if (ET.milliseconds() > 500) {
+                            OuttakeBucket.setPosition(0.3);;
+                        }
+                    } else if (Touch.isPressed()) {
+                        MechDrive.Override();
+                        resetDriveEncoders();
                         ET.reset();
                         programOrder++;
                     }
                     break;
 
+                case 4:
+                    RailControl_Outtake.SetTargetPosition(3000,-1,1);
+                    programOrder++;
+                    break;
+
                 case 5:
-                    if (ET.milliseconds() > 1000) {
-                        RailControl_Outtake.SetTargetPosition(1100, -0.8, 0.8);
+                    if (Outtake_Rail.getCurrentPosition() < -2850) {
+                        RailControl_Outtake.Override();
+                        ET.reset();
                         programOrder++;
                     }
                     break;
 
                 case 6:
-                    if (Outtake_Rail.getCurrentPosition() > -1150) {
-                        Claw.setPower(1);
+                    if (ET.milliseconds() > 2000) {
+                        setSwivelPosition(-100);
                         ET.reset();
                         programOrder++;
                     }
                     break;
 
                 case 7:
-                    MechDrive.SetTargets(0,-90,500,0.5,1);
-                    if (ET.milliseconds() > 500) {
-                        Claw.setPower(0);
+                    if (ET.milliseconds() > 2000) {
+                        setOuttake();
                         ET.reset();
                         programOrder++;
                     }
                     break;
 
                 case 8:
-                    if (MechDrive.GetTaskState() == Task_State.READY || MechDrive.GetTaskState() == Task_State.DONE) {
-                        RailControl_Outtake.SetTargetPosition(0,-0.8,0.8);
-                        MechDrive.SetTargets(0,180,1800,0.5,1);
+                    if (ET.milliseconds() > 2000) {
+                        setSwivelPosition(0);
+                        ET.reset();
                         programOrder++;
                     }
                     break;
 
                 case 9:
-                    if (Outtake_Rail.getCurrentPosition() > -200) {
-                        setSwivelPosition(0);
+                    if (ET.milliseconds() > 1000) {
+                        RailControl_Outtake.SetTargetPosition(1000,-0.7,0.7);
+                        MechDrive.SetTargets(0,0,0, 0.7,1);
+                        ET.reset();
                         programOrder++;
                     }
                     break;
 
                 case 10:
                     if (MechDrive.GetTaskState() == Task_State.READY || MechDrive.GetTaskState() == Task_State.DONE) {
-                        DirectionControl.SetTargetDirection(75, 0.5);
-                        if (GyroContinuity() > 74) {
+                        DirectionControl.SetTargetDirection(-75, 0.5);
+                        if (GyroContinuity() < -74) {
                             DirectionControl.Override();
                             programOrder++;
                         }
@@ -296,8 +298,8 @@ public class BlueObservation extends LinearOpMode {
                     break;
 
                 case 11:
-                    DirectionControl.SetTargetDirection(90, 0.2);
-                    if (GyroContinuity() > 89) {
+                    DirectionControl.SetTargetDirection(-90, 0.2);
+                    if (GyroContinuity() < -89) {
                         DirectionControl.Override();
                         ET.reset();
                         resetDriveEncoders();
@@ -306,88 +308,22 @@ public class BlueObservation extends LinearOpMode {
                     break;
 
                 case 12:
-                    if (ET.milliseconds() > 2000) {
-                        MechDrive.SetTargets(90,180,920,0.2,1);
-                        programOrder++;
-                    }
+                    setSwivelPosition(-100);
+                    ET.reset();
+                    programOrder++;
                     break;
 
                 case 13:
-                    if (MechDrive.GetTaskState() == Task_State.READY || MechDrive.GetTaskState() == Task_State.DONE) {
-                        Claw.setPower(-1);
-                        ET.reset();
+                    if (ET.milliseconds() > 1000) {
+                        RailControl_Outtake.SetTargetPosition(0,-0.7,0.7);
+                        setOuttakeBase();
                         programOrder++;
                     }
                     break;
 
                 case 14:
-                    if (ET.milliseconds() > 500) {
-                        MechDrive.SetTargets(90,-90,2400,0.5,1);
-                        RailControl_Outtake.SetTargetPosition(500,-0.7,0.7);
-                        setSwivelPosition(200);
-                        programOrder++;
-                    }
-                    break;
-
-                case 15:
-                    if (MechDrive.GetTaskState() == Task_State.READY || MechDrive.GetTaskState() == Task_State.DONE) {
-                        MechDrive.SetTargets(90,0,800,0.5,1);
-                        RailControl_Outtake.SetTargetPosition(1500,-0.7,0.7);
-                        programOrder++;
-                    }
-                    break;
-
-                case 16:
-                    if (MechDrive.GetTaskState() == Task_State.READY || MechDrive.GetTaskState() == Task_State.DONE) {
-                        MechDrive.SetTargets(90,0,420,0.2,1);
-                        programOrder++;
-                    }
-                    break;
-
-                case 17:
-                    if (MechDrive.GetTaskState() == Task_State.READY || MechDrive.GetTaskState() == Task_State.DONE) {
-                        ET.reset();
-                        programOrder++;
-                    }
-                    break;
-
-                case 18:
-                    if (ET.milliseconds() > 500) {
-                        RailControl_Outtake.SetTargetPosition(1100, -0.8, 0.8);
-                        ET.reset();
-                        programOrder++;
-                    }
-                    break;
-
-                case 19:
-                    if (Outtake_Rail.getCurrentPosition() > -1150) {
-                        Claw.setPower(1);
-                        ET.reset();
-                        programOrder++;
-                    }
-                    break;
-
-                case 20:
-                    MechDrive.SetTargets(90,180,1000,0.5,1);
-                    if (ET.milliseconds() > 500) {
-                        Claw.setPower(0);
-                        setSwivelPosition(100);
-                        RailControl_Outtake.SetTargetPosition(0, -0.8, 0.8);
-                        ET.reset();
-                        programOrder++;
-                    }
-                    break;
-
-                case 21:
-                    if (ET.milliseconds() > 1000) {
-                        setSwivelPosition(0);
-                        programOrder++;
-                    }
-                    break;
-
-                case 22:
-                    if (MechDrive.GetTaskState() == Task_State.READY || MechDrive.GetTaskState() == Task_State.DONE) {
-                        MechDrive.SetTargets(90,90,2600,0.5,1);
+                    if (Outtake_Rail.getCurrentPosition() > -150) {
+                        setSwivelPosition(-190);
                         setIntakeFolded();
                         programOrder++;
                     }
@@ -415,6 +351,7 @@ public class BlueObservation extends LinearOpMode {
             telemetry.addLine();
             telemetry.addData("Intake Distance Sensor Value:", DI.getDistance(DistanceUnit.CM));
             telemetry.addData("Outtake Distance Sensor Value:", DO.getDistance(DistanceUnit.CM));
+            telemetry.addData("Touch Sensor is Pressed?", Touch.isPressed());
             telemetry.addData("Intake Rail Encoder Value:", Intake_Rail.getCurrentPosition());
             telemetry.addData("Outtake Rail Encoder Value:", Outtake_Rail.getCurrentPosition());
             telemetry.addData("Swivel Encoder Value:", Swivel.getCurrentPosition());
@@ -451,9 +388,9 @@ public class BlueObservation extends LinearOpMode {
 
         OuttakeBucket.setDirection(Servo.Direction.FORWARD);
         OuttakeWrist.setDirection(Servo.Direction.REVERSE);
-        setOuttakeBase();
+        setOuttakeTransfer();
 
-        Claw.setPower(-1);
+        Claw.setPower(0);
     }
 
     private void Color_Distance_Detector() {

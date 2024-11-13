@@ -18,6 +18,7 @@ import com.qualcomm.robotcore.hardware.NormalizedRGBA;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcontroller.external.samples.UtilityOctoQuadConfigMenu;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
@@ -128,7 +129,6 @@ public class RedObservation extends LinearOpMode {
     int outtakeTargetPosition;
     int resetAttachments = 1000;
     int intakeSpecimen = 1000;
-    int outtakeSpecimen = 1000;
     int setObservation = 1000;
     int outtakeObservation = 1000;
 
@@ -207,306 +207,86 @@ public class RedObservation extends LinearOpMode {
 
         while (opModeIsActive()) {
 
-            /******************************************************************
-             * Automatic Sequence Managers
-             *****************************************************************/
+            switch (programOrder) {
 
-            //Intake automatic sequencing
-            switch (intakeSequence) {
+                case 0:
+                    MechDrive.SetTargets(0,90,1100,0.5,1);
+                    RailControl_Outtake.SetTargetPosition(600,-0.7,0.7);
+                    setSwivelPosition(0);
+                    programOrder++;
+                    break;
 
                 case 1:
-                    if (DO.getDistance(DistanceUnit.CM) > 10.5) {
+                    if (MechDrive.GetTaskState() == Task_State.READY || MechDrive.GetTaskState() == Task_State.DONE) {
+                        MechDrive.SetTargets(0,0,600,0.5,1);
                         setIntakeEntry();
-                        ET.reset();
-                        RailControl_Intake.SetTargetPosition(1000, -0.7, 0.7);
-                        intakeSequence++;
-                    } else {
-                        intakeSequence = 1000;
+                        programOrder++;
                     }
                     break;
 
                 case 2:
-                    if (Intake_Rail.getCurrentPosition() < -850) {
-                        wheelOn();
-                        setIntake();
-                        setSwivelPosition(200);
-                        intakeSequence++;
+                    if (MechDrive.GetTaskState() == Task_State.READY || MechDrive.GetTaskState() == Task_State.DONE) {
+                        setSwivelPosition(100);
+                        RailControl_Outtake.SetTargetPosition(1500,-0.8,0.8);
+                        programOrder++;
                     }
                     break;
 
                 case 3:
-                    if (redTeam) {
-                        if ((RedIntakeSide || YellowIntakeSide)) {
-                            setOuttakeTransfer();
-                            setIntakeEntry();
-                            RailControl_Intake.SetTargetPosition(0, -0.7, 0.7);
-                            ET.reset();
-                            intakeSequence++;
-                        } else if (BlueIntakeSide) {
-                            wheelReverse();
-                        } else {
-                            wheelOn();
-                        }
-                    } else if (blueTeam) {
-                        if ((BlueIntakeSide || YellowIntakeSide)) {
-                            setOuttakeTransfer();
-                            setIntakeEntry();
-                            RailControl_Intake.SetTargetPosition(0, -0.7, 0.7);
-                            ET.reset();
-                            intakeSequence++;
-                        } else if (RedIntakeSide) {
-                            wheelReverse();
-                        } else {
-                            wheelOn();
-                        }
-                    } else if (!blueTeam && !redTeam) {
-                        if (RedIntakeSide || YellowIntakeSide || BlueIntakeSide) {
-                            setOuttakeTransfer();
-                            setIntakeEntry();
-                            RailControl_Intake.SetTargetPosition(0, -0.7, 0.7);
-                            ET.reset();
-                            intakeSequence++;
-                        }
+                    if (Outtake_Rail.getCurrentPosition() < -1400) {
+                        MechDrive.SetTargets(0,90,450,0.5,1);
+                        programOrder++;
                     }
                     break;
 
                 case 4:
-                    if (ET.milliseconds() > 250) {
-                        wheelOff();
-                        if (Intake_Rail.getCurrentPosition() > -150) {
-                            setIntakeFolded();
-                            ET.reset();
-                            intakeSequence++;
-                        }
+                    if (MechDrive.GetTaskState() == Task_State.READY || MechDrive.GetTaskState() == Task_State.DONE) {
+                        ET.reset();
+                        programOrder++;
                     }
                     break;
 
                 case 5:
-                    if (ET.milliseconds() > 500) {
-                        wheelReverse();
-                        intakeSequence++;
+                    if (ET.milliseconds() > 1000) {
+                        RailControl_Outtake.SetTargetPosition(1100, -0.8, 0.8);
+                        programOrder++;
                     }
                     break;
 
                 case 6:
-                    if (DO.getDistance(DistanceUnit.CM) < 10) {
-                        wheelOff();
-                        setIntakeEntry();
-                        intakeSequence++;
-                    }
-                    break;
-
-                default:
-                    break;
-            }
-
-            switch (intakeSpecimen) {
-
-                case 1:
-                    Claw.setPower(-1);
-                    setSwivelPosition(0);
-                    ET.reset();
-                    intakeSpecimen++;
-                    break;
-
-                case 2:
-                    if (ET.milliseconds() > 1000) {
-                        RailControl_Outtake.SetTargetPosition(1450,-0.8,0.8);
-                        ET.reset();
-                        intakeSpecimen++;
-                    }
-                    break;
-
-                case 3:
-                    if (ET.milliseconds() > 500) {
-                        setSwivelPosition(200);
-                        setIntakeEntry();
-                        intakeSpecimen++;
-                    }
-                    break;
-
-                default:
-                    break;
-            }
-
-            switch (outtakeBucketSequence) {
-
-                case 1:
-                    if (DO.getDistance(DistanceUnit.CM) < 10) {
-                        setSwivelPosition(100);
-                        OuttakeBucket.setPosition(0.3);
-                        ET.reset();
-                        outtakeBucketSequence++;
-                    } else {
-                        outtakeBucketSequence = 1000;
-                        outtakeTargetPosition = 0;
-                    }
-                    break;
-
-                case 2:
-                    if (Swivel.getCurrentPosition() < 120) {
-                        RailControl_Outtake.SetTargetPosition(outtakeTargetPosition - 500,-0.9,0.9);
-                        setSwivelPosition(0);
-                        outtakeBucketSequence++;
-                    }
-                    break;
-
-                case 3:
-                    if (Outtake_Rail.getCurrentPosition() < -outtakeTargetPosition + 700) {
-                        OuttakeBucket.setPosition(0.2);
-                        outtakeBucketSequence++;
-                    }
-                    break;
-
-                default:
-                    break;
-            }
-
-            switch (outtakeSpecimen) {
-
-                case 1:
-                    RailControl_Outtake.SetTargetPosition(1100,-0.8,0.8);
-                    outtakeSpecimen++;
-                    break;
-
-                case 2:
                     if (Outtake_Rail.getCurrentPosition() > -1150) {
                         Claw.setPower(1);
                         ET.reset();
-                        outtakeSpecimen++;
+                        programOrder++;
                     }
                     break;
 
-                case 3:
+                case 7:
+                    MechDrive.SetTargets(0,-90,500,0.5,1);
                     if (ET.milliseconds() > 500) {
                         Claw.setPower(0);
-                        setSwivelPosition(100);
                         ET.reset();
-                        outtakeSpecimen++;
+                        programOrder++;
                     }
                     break;
 
-                case 4:
-                    if (Swivel.getCurrentPosition() < 140) {
+                case 8:
+                    if (MechDrive.GetTaskState() == Task_State.READY || MechDrive.GetTaskState() == Task_State.DONE) {
                         RailControl_Outtake.SetTargetPosition(0,-0.8,0.8);
-                        outtakeSpecimen++;
+                        MechDrive.SetTargets(0,180,1800,0.5,1);
+                        programOrder++;
                     }
                     break;
 
-                case 5:
-                    if (Outtake_Rail.getCurrentPosition() > -150) {
-                        setSwivelPosition(0);
-                        outtakeSpecimen++;
-                    }
-
-                default:
-                    break;
-
-            }
-
-            switch (setObservation) {
-
-                case 1:
-                    setSwivelPosition(100);
-                    OuttakeBucket.setPosition(0.2);
-                    ET.reset();
-                    setObservation++;
-                    break;
-
-                case 2:
-                    if (ET.milliseconds() > 500) {
-                        setOuttake();
-                        ET.reset();
-                    }
-                    setObservation++;
-                    break;
-
-                case 3:
-                    if (ET.milliseconds() > 500) {
-                        setOuttakeBase();
-                        setSwivelPosition(0);
-                        ET.reset();
-                    }
-                    setObservation++;
-                    break;
-
-                default:
-                    break;
-            }
-
-
-            switch (outtakeObservation) {
-
-                case 1:
-                    setOuttake();
-                    outtakeObservation++;
-                    ET.reset();
-                    break;
-
-                case 2:
-                    if (ET.milliseconds() > 500) {
-                        setOuttakeBase();
-                        ET.reset();
-                        outtakeObservation++;
-                    }
-                    break;
-
-                case 3:
-                    if (ET.milliseconds() > 500) {
-                        setSwivelPosition(0);
-                        outtakeObservation++;
-                    }
-                    break;
-
-                default:
-                    break;
-            }
-
-            switch (resetAttachments) {
-
-                case 1:
-                    setOuttake();
-                    ET.reset();
-                    resetAttachments++;
-                    break;
-
-                case 2:
-                    if (ET.milliseconds() > 2500) {
-                        setIntakeEntry();
-                        setOuttakeBase();
-                        wheelOff();
-                        RailControl_Intake.SetTargetPosition(0, -0.7, 0.7);
-                        RailControl_Outtake.SetTargetPosition(100, -0.7, 0.7);
-                        setSwivelPosition(100);
-                        intakeSequence = 1000;
-                        outtakeBucketSequence = 1000;
-                        outtakeTargetPosition = 0;
-                        Claw.setPower(1);
-                        ET.reset();
-                        resetAttachments++;
-                    }
-                    break;
-
-                case 3:
+                case 9:
                     if (Outtake_Rail.getCurrentPosition() > -200) {
-                        RailControl_Outtake.SetTargetPosition(0,-0.7,0.7);
                         setSwivelPosition(0);
-                        if (ET.milliseconds() > 300) {
-                            Claw.setPower(0);
-                            resetAttachments++;
-                        }
+                        programOrder++;
                     }
                     break;
 
-                default:
-                    break;
-            }
-
-
-            switch (programOrder) {
-
-                case 0:
-                    if (ET.milliseconds() > 1000) {
+                case 10:
+                    if (MechDrive.GetTaskState() == Task_State.READY || MechDrive.GetTaskState() == Task_State.DONE) {
                         DirectionControl.SetTargetDirection(75, 0.5);
                         if (GyroContinuity() > 74) {
                             DirectionControl.Override();
@@ -515,13 +295,101 @@ public class RedObservation extends LinearOpMode {
                     }
                     break;
 
-                case 1:
+                case 11:
                     DirectionControl.SetTargetDirection(90, 0.2);
                     if (GyroContinuity() > 89) {
                         DirectionControl.Override();
                         ET.reset();
+                        resetDriveEncoders();
                         programOrder++;
                     }
+                    break;
+
+                case 12:
+                    if (ET.milliseconds() > 2000) {
+                        MechDrive.SetTargets(90,180,900,0.2,1);
+                        programOrder++;
+                    }
+                    break;
+
+                case 13:
+                    if (MechDrive.GetTaskState() == Task_State.READY || MechDrive.GetTaskState() == Task_State.DONE) {
+                        Claw.setPower(-1);
+                        ET.reset();
+                        programOrder++;
+                    }
+                    break;
+
+                case 14:
+                    if (ET.milliseconds() > 500) {
+                        MechDrive.SetTargets(90,-90,2000,0.5,1);
+                        RailControl_Outtake.SetTargetPosition(500,-0.7,0.7);
+                        setSwivelPosition(200);
+                        programOrder++;
+                    }
+                    break;
+
+                case 15:
+                    if (MechDrive.GetTaskState() == Task_State.READY || MechDrive.GetTaskState() == Task_State.DONE) {
+                        MechDrive.SetTargets(90,0,1000,0.5,1);
+                        RailControl_Outtake.SetTargetPosition(1500,-0.7,0.7);
+                        programOrder++;
+                    }
+                    break;
+
+                case 16:
+                    if (MechDrive.GetTaskState() == Task_State.READY || MechDrive.GetTaskState() == Task_State.DONE) {
+                        MechDrive.SetTargets(90,0,400,0.2,1);
+                        programOrder++;
+                    }
+                    break;
+
+                case 17:
+                    if (MechDrive.GetTaskState() == Task_State.READY || MechDrive.GetTaskState() == Task_State.DONE) {
+                        ET.reset();
+                        programOrder++;
+                    }
+                    break;
+
+                case 18:
+                    if (ET.milliseconds() > 500) {
+                        RailControl_Outtake.SetTargetPosition(1100, -0.8, 0.8);
+                        programOrder++;
+                    }
+                    break;
+
+                case 19:
+                    if (Outtake_Rail.getCurrentPosition() > -1150) {
+                        Claw.setPower(1);
+                        ET.reset();
+                        programOrder++;
+                    }
+                    break;
+
+                case 20:
+                    MechDrive.SetTargets(90,180,1000,0.5,1);
+                    if (ET.milliseconds() > 500) {
+                        Claw.setPower(0);
+                        setSwivelPosition(100);
+                        RailControl_Outtake.SetTargetPosition(0, -0.8, 0.8);
+                        ET.reset();
+                        programOrder++;
+                    }
+                    break;
+
+                case 21:
+                    if (Outtake_Rail.getCurrentPosition() > -150) {
+                        setSwivelPosition(0);
+                        programOrder++;
+                    }
+                    break;
+
+                case 22:
+                    if (MechDrive.GetTaskState() == Task_State.READY || MechDrive.GetTaskState() == Task_State.DONE) {
+                        MechDrive.SetTargets(90,90,2100,0.5,1);
+                        programOrder++;
+                    }
+                    break;
 
                 default:
                     break;
