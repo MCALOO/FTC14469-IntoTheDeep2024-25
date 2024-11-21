@@ -110,10 +110,10 @@ public class Sprint3_2 extends LinearOpMode {
     public void runOpMode() {
 
         //Motor Initalization
-        BackLeft = hardwareMap.get(DcMotor.class, "leftBack");
-        BackRight = hardwareMap.get(DcMotor.class, "rightBack");
-        FrontLeft = hardwareMap.get(DcMotor.class, "leftFront");
-        FrontRight = hardwareMap.get(DcMotor.class, "rightFront");
+        BackLeft = hardwareMap.get(DcMotor.class, "BackLeft");
+        BackRight = hardwareMap.get(DcMotor.class, "BackRight");
+        FrontLeft = hardwareMap.get(DcMotor.class, "FrontLeft");
+        FrontRight = hardwareMap.get(DcMotor.class, "FrontRight");
         Intake_Rail = hardwareMap.get(DcMotor.class, "IntakeRail");
         Outtake_Rail = hardwareMap.get(DcMotor.class, "OuttakeRail");
         Swivel = hardwareMap.get(DcMotor.class,"Swivel");

@@ -75,7 +75,7 @@ public class Rail_ControlV3 {
 
             // 0.07, 0.000001, 0.000005 (these are the best gains for accurate position and few jitters
             //cmd = pid_obj.PID_Control(target_position, 0.03, 0.000001, 0.000005, motor_obj.getCurrentPosition() );
-            cmd = pid_obj.PID_Control(target_position, 0.005, 0, 0, motor_obj.getCurrentPosition() );
+            cmd = pid_obj.PID_Control(target_position, 0.01, 0, 0, motor_obj.getCurrentPosition() );
 
             // Don't let the motor run too fast. Otherwise, it will overshoot
             clipped_cmd = Range.clip(cmd, min, max);

@@ -5,7 +5,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
-//@TeleOp(name = "RailTest",  group = "Rail")
+@TeleOp(name = "RailTest",  group = "Rail")
 public class RailTest extends LinearOpMode {
 
     //Motors
@@ -71,7 +71,7 @@ public class RailTest extends LinearOpMode {
 
             if (!button_a_already_pressed2) {
                 if (gamepad2.a) {
-                    RailControl_Intake.SetTargetPosition(1000,-0.80,0.80);
+                    RailControl_Intake.SetTargetPosition(1500,-1,1);
                     button_a_already_pressed2 = true;
                 }
             } else {
@@ -82,7 +82,7 @@ public class RailTest extends LinearOpMode {
 
             if (!button_b_already_pressed2) {
                 if (gamepad2.b) {
-                    RailControl_Intake.SetTargetPosition(0,-0.80,0.80);
+                    RailControl_Intake.SetTargetPosition(0,-1,1);
                     button_b_already_pressed2 = true;
                 }
             } else {
@@ -93,7 +93,7 @@ public class RailTest extends LinearOpMode {
 
             if (!button_y_already_pressed2) {
                 if (gamepad2.y) {
-                    RailControl_Outtake.SetTargetPosition(900,-0.8,0.8);
+                    RailControl_Outtake.SetTargetPosition(3000,-1,1);
                     button_y_already_pressed2 = true;
                 }
             } else {
@@ -104,7 +104,7 @@ public class RailTest extends LinearOpMode {
 
             if (!button_x_already_pressed2) {
                 if (gamepad2.x) {
-                    RailControl_Outtake.SetTargetPosition(0,-0.8,0.8);
+                    RailControl_Outtake.SetTargetPosition(0,-1,1);
                     button_x_already_pressed2 = true;
                 }
             } else {
