@@ -20,10 +20,10 @@ import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 public class MechDriveDeadWheel_Test extends LinearOpMode {
 
     //Motors
-    static DcMotor BackLeft;
-    static DcMotor BackRight;
-    static DcMotor FrontLeft;
-    static DcMotor FrontRight;
+    static DcMotor leftBack;
+    static DcMotor rightBack;
+    static DcMotor leftFront;
+    static DcMotor rightFront;
 
     static Encoder perp;
     static Encoder par0;
@@ -35,8 +35,8 @@ public class MechDriveDeadWheel_Test extends LinearOpMode {
     BNO055IMU IMU;
 
     //IMU Orientation
-    byte AXIS_MAP_CONFIG_BYTE = 0x18; //rotates control hub 90 degrees around y axis by swapping x and z axis
-    byte AXIS_MAP_SIGN_BYTE = 0x02; //Negates the remapped z-axis
+    byte AXIS_MAP_CONFIG_BYTE = 0x24;
+    byte AXIS_MAP_SIGN_BYTE = 0x06;
 
     //Variables For IMU Gyro
     double globalangle;
@@ -54,38 +54,33 @@ public class MechDriveDeadWheel_Test extends LinearOpMode {
 
     public void runOpMode() {
 
-        BackLeft = hardwareMap.get(DcMotor.class, "BackLeft");
-        BackRight = hardwareMap.get(DcMotor.class, "BackRight");
-        FrontLeft = hardwareMap.get(DcMotor.class, "FrontLeft");
-        FrontRight = hardwareMap.get(DcMotor.class, "FrontRight");
+        leftBack = hardwareMap.get(DcMotor.class, "leftBack");
+        rightBack = hardwareMap.get(DcMotor.class, "rightBack");
+        leftFront = hardwareMap.get(DcMotor.class, "leftFront");
+        rightFront = hardwareMap.get(DcMotor.class, "rightFront");
 
-        FrontRight.setDirection(DcMotorSimple.Direction.FORWARD);
-        FrontLeft.setDirection(DcMotorSimple.Direction.REVERSE);
-        BackRight.setDirection(DcMotorSimple.Direction.FORWARD);
-        BackLeft.setDirection(DcMotorSimple.Direction.REVERSE);
+        leftBack.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        rightBack.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        leftFront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        rightFront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
-        BackLeft.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        BackRight.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        FrontLeft.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        FrontRight.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        leftBack.setDirection(DcMotorSimple.Direction.REVERSE);
+        rightBack.setDirection(DcMotorSimple.Direction.FORWARD);
+        leftFront.setDirection(DcMotorSimple.Direction.REVERSE);
+        rightFront.setDirection(DcMotorSimple.Direction.FORWARD);
 
-        BackLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        BackRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        FrontLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        FrontRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-
-        IMU = hardwareMap.get(BNO055IMU.class, "imu");
-
-        perp = new OverflowEncoder(new RawEncoder(hardwareMap.get(DcMotorEx.class, "FrontLeft")));
-        par0 = new OverflowEncoder(new RawEncoder(hardwareMap.get(DcMotorEx.class, "BackLeft")));
-        par1 = new OverflowEncoder(new RawEncoder(hardwareMap.get(DcMotorEx.class, "FrontRight")));
+        perp = new OverflowEncoder(new RawEncoder(hardwareMap.get(DcMotorEx.class, "leftFront")));
+        par0 = new OverflowEncoder(new RawEncoder(hardwareMap.get(DcMotorEx.class, "leftBack")));
+        par1 = new OverflowEncoder(new RawEncoder(hardwareMap.get(DcMotorEx.class, "rightFront")));
 
         perp.setDirection(DcMotorSimple.Direction.FORWARD);
         par0.setDirection(DcMotorSimple.Direction.REVERSE);
         par1.setDirection(DcMotorSimple.Direction.REVERSE);
 
-        DeadWheel = new Mech_Drive_DEADWHEEL(FrontRight, FrontLeft, BackRight, BackLeft, FrontRight, FrontLeft,
+        DeadWheel = new Mech_Drive_DEADWHEEL(rightFront, leftFront, rightBack, leftBack, rightFront, leftFront,
                 MoveDirection.FORWARD, MoveDirection.REVERSE, MoveDirection.FORWARD, telemetry);
+
+        IMU = hardwareMap.get(BNO055IMU.class, "imu");
 
         //Configure IMU for GyroTurning
         parameters.angleUnit = BNO055IMU.AngleUnit.DEGREES;
@@ -107,7 +102,7 @@ public class MechDriveDeadWheel_Test extends LinearOpMode {
             switch (programorder) {
 
                 case 0:
-                    DeadWheel.SetTargets(0,0,1000,0.5);
+                    DeadWheel.SetTargets(0,0,10000,0.5);
                     programorder++;
                     break;
 
@@ -115,9 +110,12 @@ public class MechDriveDeadWheel_Test extends LinearOpMode {
                     break;
             }
 
-            telemetry.addData("perp encoder:", FrontLeft.getCurrentPosition());
-            telemetry.addData("par0 encoder:", BackLeft.getCurrentPosition());
-            telemetry.addData("par1 encoder:", FrontRight.getCurrentPosition());
+            DeadWheel.Task(GyroContinuity());
+
+            telemetry.addData("perp encoder:", leftFront.getCurrentPosition());
+            telemetry.addData("par0 encoder:", leftBack.getCurrentPosition());
+            telemetry.addData("par1 encoder:", rightFront.getCurrentPosition());
+            telemetry.addData("Angle: ", GyroContinuity());
 
             telemetry.addData("perp", perp.getDirection());
             telemetry.addData("par0", par0.getDirection());

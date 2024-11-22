@@ -72,6 +72,13 @@ public class Mech_Drive_DEADWHEEL {
 
         state = Task_State.RUN;
 
+        if (strafingangle == 90 || strafingangle == -90) {
+            encoderselect = 0;
+        }
+        else {
+            encoderselect = 1;
+        }
+
     }
 
     public void Override() {
@@ -92,13 +99,11 @@ public class Mech_Drive_DEADWHEEL {
         double radians = Math.toRadians(-strafingangle); // negate strafing angle for left hand rule
         double power;
 
-        if (strafingangle == 90 || strafingangle == -90) {
+        if (encoderselect == 0) {
             encoder = Perp.getCurrentPosition();
-            encoderselect = 0;
         }
         else {
             encoder = Par.getCurrentPosition();
-            encoderselect = 1;
         }
 
         // Always run this PID control when in RUN
