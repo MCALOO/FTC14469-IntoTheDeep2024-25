@@ -11,7 +11,7 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 @TeleOp(name = "DeadWheelDirectionTest",  group = "MecanumDrive")
-public class DeadWheelTest extends LinearOpMode {
+public class DeadWheelDirectionTest extends LinearOpMode {
 
     //Motors
     static DcMotor leftBack;

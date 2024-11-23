@@ -23,6 +23,7 @@ public class Mech_Drive_DEADWHEEL {
     double steeringoutput;
     int encoderselect = 0;
     Task_State state;
+    boolean done = false;
 
     double finalpower;
 
@@ -49,11 +50,16 @@ public class Mech_Drive_DEADWHEEL {
         FrontLeft.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         BackRight.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         BackLeft.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        Par.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        Perp.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
         FrontRight.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         FrontLeft.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         BackRight.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         BackLeft.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        Par.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        Perp.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
 
         state = Task_State.INIT;
 
@@ -165,10 +171,14 @@ public class Mech_Drive_DEADWHEEL {
                 BackLeft.setPower(0);
                 BackRight.setPower(0);
 
-                FrontRight.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                BackRight.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                 FrontRight.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
                 BackRight.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+                FrontRight.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+                BackRight.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+                Par.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                Perp.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
                 state = Task_State.DONE;
             }
         }
@@ -178,10 +188,14 @@ public class Mech_Drive_DEADWHEEL {
             BackLeft.setPower(0);
             BackRight.setPower(0);
 
-            FrontRight.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-            BackRight.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
             FrontRight.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             BackRight.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            FrontRight.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            BackRight.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+            Par.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            Perp.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
             state = Task_State.READY;
         }
         else if (state == Task_State.OVERRIDE) {
@@ -190,10 +204,14 @@ public class Mech_Drive_DEADWHEEL {
             BackLeft.setPower(0);
             BackRight.setPower(0);
 
-            FrontRight.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-            BackRight.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
             FrontRight.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             BackRight.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            FrontRight.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            BackRight.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+            Par.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            Perp.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
             state = Task_State.READY;
         }
 
