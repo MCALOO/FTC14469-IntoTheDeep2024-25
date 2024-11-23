@@ -73,10 +73,10 @@ public class MechDriveDeadWheel_Test extends LinearOpMode {
         par0.setDirection(DcMotorSimple.Direction.REVERSE);
         par1.setDirection(DcMotorSimple.Direction.REVERSE);
 
-        MechDrive = new Mech_Drive_FAST(rightFront, leftFront, rightBack, leftBack, MoveDirection.FORWARD, telemetry);
+//        MechDrive = new Mech_Drive_FAST(rightFront, leftFront, rightBack, leftBack, MoveDirection.FORWARD, telemetry);
 
-//        DeadWheel = new Mech_Drive_DEADWHEEL(rightFront, leftFront, rightBack, leftBack, rightFront, leftFront,
-//                MoveDirection.FORWARD, MoveDirection.FORWARD, MoveDirection.FORWARD, telemetry);
+        DeadWheel = new Mech_Drive_DEADWHEEL(rightFront, leftFront, rightBack, leftBack, rightFront, leftFront,
+                MoveDirection.FORWARD, MoveDirection.FORWARD, MoveDirection.FORWARD, telemetry);
 
         IMU = hardwareMap.get(BNO055IMU.class, "imu");
 
@@ -100,8 +100,8 @@ public class MechDriveDeadWheel_Test extends LinearOpMode {
             switch (programorder) {
 
                 case 0:
-//                    DeadWheel.SetTargets(0,0,10000,0.5);
-                    MechDrive.SetTargets(0,0,1000,0.5,1);
+                    DeadWheel.SetTargets(0,0,10000,0.5);
+//                    MechDrive.SetTargets(0,0,1000,0.5,1);
                     programorder++;
                     break;
 
@@ -109,7 +109,7 @@ public class MechDriveDeadWheel_Test extends LinearOpMode {
                     break;
             }
 
-            MechDrive.Task(GyroContinuity());
+//            MechDrive.Task(GyroContinuity());
             DeadWheel.Task(GyroContinuity());
 
             telemetry.addData("perp encoder:", leftFront.getCurrentPosition());
