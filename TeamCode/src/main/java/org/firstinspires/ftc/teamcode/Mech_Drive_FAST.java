@@ -95,9 +95,9 @@ public class Mech_Drive_FAST {
         if (state == Task_State.RUN) {
 
             if (encoderselect == 0) {
-                power = ((targetdistance - BackRight.getCurrentPosition()) / targetdistance) * targetpower;
-            } else {
                 power = ((targetdistance - FrontRight.getCurrentPosition()) / targetdistance) * targetpower;
+            } else {
+                power = ((targetdistance - BackRight.getCurrentPosition()) / targetdistance) * targetpower;
             }
             power = 1.2*power;
             finalpower = Range.clip(power, 0.35, targetpower);
@@ -182,7 +182,7 @@ public class Mech_Drive_FAST {
             state = Task_State.READY;
         }
 
-        //telemetry.addData("ActualDistance", encoder);
+        telemetry.addData("ActualDistance", encoder);
         //telemetry.addData("steering output", steeringoutput);
         //telemetry.addData("Steering", steeringoutput);
         //telemetry.addData("DirectionZ", gyro_Z_reading);

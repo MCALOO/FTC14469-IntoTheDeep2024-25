@@ -31,6 +31,7 @@ public class MechDriveDeadWheel_Test extends LinearOpMode {
 
     Mech_Drive_DEADWHEEL DeadWheel;
     Mech_Drive_FAST MechDrive;
+//    Direction_Control DirectionControl;
 
     //IMU
     BNO055IMU IMU;
@@ -60,24 +61,37 @@ public class MechDriveDeadWheel_Test extends LinearOpMode {
         leftFront = hardwareMap.get(DcMotor.class, "leftFront");
         rightFront = hardwareMap.get(DcMotor.class, "rightFront");
 
+        leftBack.setDirection(DcMotorSimple.Direction.REVERSE);
+        rightBack.setDirection(DcMotorSimple.Direction.FORWARD);
+        leftFront.setDirection(DcMotorSimple.Direction.REVERSE);
+        rightFront.setDirection(DcMotorSimple.Direction.FORWARD);
+
         leftBack.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         rightBack.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         leftFront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         rightFront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
-        perp = new OverflowEncoder(new RawEncoder(hardwareMap.get(DcMotorEx.class, "leftFront")));
-        par0 = new OverflowEncoder(new RawEncoder(hardwareMap.get(DcMotorEx.class, "leftBack")));
-        par1 = new OverflowEncoder(new RawEncoder(hardwareMap.get(DcMotorEx.class, "rightFront")));
+        leftBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        rightBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        leftFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        rightFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
-        perp.setDirection(DcMotorSimple.Direction.FORWARD);
-        par0.setDirection(DcMotorSimple.Direction.REVERSE);
-        par1.setDirection(DcMotorSimple.Direction.REVERSE);
+//        perp = new OverflowEncoder(new RawEncoder(hardwareMap.get(DcMotorEx.class, "leftFront")));
+//        par0 = new OverflowEncoder(new RawEncoder(hardwareMap.get(DcMotorEx.class, "leftBack")));
+//        par1 = new OverflowEncoder(new RawEncoder(hardwareMap.get(DcMotorEx.class, "rightFront")));
 
-//        MechDrive = new Mech_Drive_FAST(rightFront, leftFront, rightBack, leftBack, MoveDirection.FORWARD, telemetry);
+//        perp.setDirection(DcMotorSimple.Direction.FORWARD);
+//        par0.setDirection(DcMotorSimple.Direction.REVERSE);
+//        par1.setDirection(DcMotorSimple.Direction.REVERSE);
 
-        DeadWheel = new Mech_Drive_DEADWHEEL(rightFront, leftFront, rightBack, leftBack, rightFront, leftFront,
-                MoveDirection.FORWARD, MoveDirection.FORWARD, MoveDirection.FORWARD, telemetry);
+        MechDrive = new Mech_Drive_FAST(rightFront, leftFront, rightBack, leftBack, MoveDirection.FORWARD, telemetry);
 
+//        Direction = new Direction_Control(IMU, leftFront, rightFront, leftBack, rightBack);
+
+//        DeadWheel = new Mech_Drive_DEADWHEEL(rightFront, leftFront, rightBack, leftBack, rightFront, leftFront,
+//                MoveDirection.FORWARD, MoveDirection.FORWARD, MoveDirection.FORWARD, telemetry);
+
+        //imu initialization
         IMU = hardwareMap.get(BNO055IMU.class, "imu");
 
         //Configure IMU for GyroTurning
@@ -100,17 +114,40 @@ public class MechDriveDeadWheel_Test extends LinearOpMode {
             switch (programorder) {
 
                 case 0:
-                    DeadWheel.SetTargets(0,0,10000,0.5);
-//                    MechDrive.SetTargets(0,0,1000,0.5,1);
+//                    DeadWheel.SetTargets(0,0,10000,0.5);
+                    MechDrive.SetTargets(0,90,15000,0.5,0);
+//                    rightFront.setPower(0.3);
+//                    rightBack.setPower(0.3);
+//                    leftFront.setPower(0.3);
+//                    leftBack.setPower(0.3);
                     programorder++;
+                    break;
+
+                case 1:
+                    if (MechDrive.GetTaskState() == Task_State.DONE || MechDrive.GetTaskState() == Task_State.READY) {
+//                        leftBack.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+//                        rightBack.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+//                        leftFront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+//                        rightFront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                        ET.reset();
+                         programorder++;
+                    }
+                    break;
+
+                case 3:
+                    if (ET.milliseconds() > 3000) {
+                        MechDrive.SetTargets(0,-90,15000,0.5,0);
+                        programorder++;
+                    }
                     break;
 
                 default:
                     break;
             }
 
-//            MechDrive.Task(GyroContinuity());
-            DeadWheel.Task(GyroContinuity());
+            MechDrive.Task(GyroContinuity());
+//            DeadWheel.Task(GyroContinuity());
+//            DirectionControl.GyroContinuity();
 
             telemetry.addData("perp encoder:", leftFront.getCurrentPosition());
             telemetry.addData("par0 encoder:", leftBack.getCurrentPosition());
@@ -124,16 +161,28 @@ public class MechDriveDeadWheel_Test extends LinearOpMode {
             telemetry.addData("rightFront Mode (par):", rightFront.getMode());
             telemetry.addData("rightBack Mode:", rightBack.getMode());
 
+            telemetry.addData("leftFront Mode (perp):", leftFront.getPower());
+            telemetry.addData("leftBack Mode:", leftBack.getPower());
+            telemetry.addData("rightFront Mode (par):", rightFront.getPower());
+            telemetry.addData("rightBack Mode:", rightBack.getPower());
+
             telemetry.addLine();
 
-            telemetry.addData("perp", perp.getDirection());
-            telemetry.addData("par0", par0.getDirection());
-            telemetry.addData("par1", par1.getDirection());
+//            telemetry.addData("perp", perp.getDirection());
+//            telemetry.addData("par0", par0.getDirection());
+//            telemetry.addData("par1", par1.getDirection());
 
-            telemetry.update();
+//            telemetry.update();
 
         }
 
+    }
+
+    public void resetDriveEncoders() {
+        rightBack.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        rightFront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        leftBack.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        leftFront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
     }
 
     private double GyroContinuity() {
